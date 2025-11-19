@@ -8,7 +8,7 @@ runtime:
 
 resources:
   sql_warehouse:
-    warehouse_id: "e56d8ababeefe79f"   # 用组员的即可
+    warehouse_id: "e56d8ababeefe79f"  
 
 command: ["streamlit", "run", "app.py"]
 
