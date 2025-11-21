@@ -8,3 +8,4 @@ databricks-sdk>=0.26
 python-dotenv>=1.0
 streamlit-plotly-events
 pgeocode
+requests              
