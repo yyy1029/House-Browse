@@ -130,7 +130,7 @@ with col2:
 
     fig = px.bar(
         sorted_data,
-        x="city_clean",
+        x="city_clean",        
         y="gap_for_plot",
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
@@ -162,7 +162,7 @@ with col2:
     )
 
 if clicked_points:
-    selected_city_for_map = clicked_points[0]["x"]   # x 就是 city_clean
+    selected_city_for_map = clicked_points[0]["x"]  
 else:
     selected_city_for_map = None
 
@@ -223,11 +223,7 @@ if split:
 st.markdown("---")
 st.subheader("ZIP-level affordability map")
 
-if selected_city_for_map is None:
-    st.info("Click a city bar above to see ZIP-level affordability map.")
-else:
-    st.markdown(f"**Selected city:** {selected_city_for_map}")
-
+if selected_city_for_map:
     zip_df = make_zip_view_data(
         df,
         city_name=selected_city_for_map,
@@ -239,4 +235,7 @@ else:
     if zip_df.empty:
         st.info("No ZIP-level data for this city.")
     else:
-        render_zip_map_for_city(zip_df)
+        render_zip_map_for_city(zip_df, selected_city_for_map)
+else:
+    st.info("Click a city bar above to show its ZIP map.")
+
