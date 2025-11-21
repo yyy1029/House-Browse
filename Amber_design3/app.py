@@ -6,7 +6,7 @@ import plotly.express as px
 
 # from dataprep import load_data, make_city_view_data
 from dataprep import load_data, make_city_view_data, make_zip_view_data
-
+from zip_map import render_zip_map_for_city 
 from ui_components import income_control_panel
 
 
@@ -176,3 +176,26 @@ if split:
     )
     fig_unaff.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_unaff, use_container_width=True)
+
+st.markdown("---")
+st.subheader("ZIP-level affordability map (drill-down)")
+
+city_for_map = st.selectbox(
+    "Choose a city to see ZIP-level affordability on the map:",
+    sorted_data["city_clean"].unique(),
+    key="zip_map_city",
+)
+
+zip_df = make_zip_view_data(
+    df,
+    city_name=city_for_map,
+    annual_income=final_income,
+    year=selected_year,
+    budget_pct=30.0,
+)
+
+if zip_df.empty:
+    st.info("No ZIP-level data for this city.")
+else:
+    render_zip_map_for_city(zip_df)
+
