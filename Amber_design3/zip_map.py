@@ -1,10 +1,21 @@
-# zip_map.py
+# zip_map.py  (streamlit-cloud compatible version)
+
 import streamlit as st
 import numpy as np
 import plotly.express as px
 import pgeocode
-import geopandas as gpd
 import json
+import requests
+
+GEOJSON_URL = "https://raw.githubusercontent.com/OpenDataDE/State-zip-code-GeoJSON/master/us_zips.geojson"
+
+@st.cache_data
+def load_zip_geojson():
+    response = requests.get(GEOJSON_URL)
+    return response.json()
+
+zip_geojson = load_zip_geojson()
+
 
 def render_zip_map_for_city(zip_df):
 
@@ -14,10 +25,11 @@ def render_zip_map_for_city(zip_df):
 
     df = zip_df.copy()
 
+    # Ensure ZIP string exists
     if "zip_code_str" not in df.columns:
         df["zip_code_str"] = df["zipcode"].astype(str).str.zfill(5)
 
-    
+    # ---- geocode ZIPs ----
     nomi = pgeocode.Nominatim("us")
     geo_df = nomi.query_postal_code(df["zip_code_str"].tolist())
 
@@ -26,37 +38,25 @@ def render_zip_map_for_city(zip_df):
     df = df.dropna(subset=["lat", "lon"])
 
     if df.empty:
-        st.warning("ZIP codes could not be geocoded for this city.")
+        st.warning("ZIP codes could not be geocoded.")
         return
 
-    # affordability ratio 
-    # afford_ratio_zip
     df["affordability_ratio"] = df["afford_ratio_zip"]
     df["affordability_norm"] = np.clip(df["affordability_ratio"], 0, 2) / 2
 
+    df["zip_code_int"] = df["zip_code_str"].astype(int)
 
     center_lat = df["lat"].mean()
     center_lon = df["lon"].mean()
 
-    gdf = gpd.read_file("cb_2018_us_zcta510_500k/cb_2018_us_zcta510_500k.shp")
-    gdf.to_file("us_zcta5.geojson", driver="GeoJSON")
-    with open("us_zcta5.geojson", "r") as f:
-        zip_geojson = json.load(f)
-
+    # ---- draw map ----
     colorscale = [
         [0.0, "red"],
         [0.5, "yellow"],
         [1.0, "green"],
     ]
-    colorbar_config = dict(
-        title="Affordability Ratio",
-        tickvals=[0.0, 0.25, 0.5, 0.75, 1.0],
-        ticktext=["0", "0.5", "1.0", "1.5", "2.0"],
-    )
 
-    df["zip_code_int"] = df["zip_code_str"].astype(int)
-
-    fig_map = px.choropleth_mapbox(
+    fig = px.choropleth_mapbox(
         df,
         geojson=zip_geojson,
         locations="zip_code_int",
@@ -75,8 +75,14 @@ def render_zip_map_for_city(zip_df):
         zoom=10,
         height=600,
     )
-    fig_map.update_layout(
+
+    fig.update_layout(
         margin=dict(l=0, r=0, t=0, b=0),
-        coloraxis_colorbar=colorbar_config,
+        coloraxis_colorbar=dict(
+            title="Affordability Ratio",
+            tickvals=[0, 0.5, 1],
+            ticktext=["0", "1", "2+"],
+        ),
     )
-    st.plotly_chart(fig_map, use_container_width=True)
+
+    st.plotly_chart(fig, use_container_width=True)
