@@ -8,7 +8,7 @@ import plotly.express as px
 from dataprep import load_data, make_city_view_data, make_zip_view_data
 from zip_map import render_zip_map_for_city 
 from ui_components import income_control_panel
-
+from streamlit_plotly_events import plotly_events
 
 # ---------- Load data ----------
 @st.cache_data
@@ -95,6 +95,36 @@ with col1:
         unsafe_allow_html=True,
     )
 
+# with col2:
+#     st.subheader("Affordability gap by city")
+
+#     fig = px.bar(
+#         sorted_data,
+#         x="city_clean",
+#         y="gap_for_plot",
+#         color="affordable",
+#         color_discrete_map={True: "green", False: "red"},
+#         labels={
+#             "city_clean": "City",
+#             "gap_for_plot": "Distance from affordability boundary "
+#                             "(+ affordable, − unaffordable)",
+#         },
+#         hover_data={
+#             "city_clean": True,
+#             "Median Rent": ":.0f",
+#             "Per Capita Income": ":.0f",
+#             "afford_gap": ":.2f",
+#         },
+#         height=500,
+#     )
+
+#     fig.update_layout(
+#         xaxis_tickangle=-45,
+#         margin=dict(l=20, r=20, t=40, b=80),
+#     )
+
+#     st.plotly_chart(fig, use_container_width=True)
+
 with col2:
     st.subheader("Affordability gap by city")
 
@@ -123,7 +153,19 @@ with col2:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    clicked_points = plotly_events(
+        fig,
+        click_event=True,
+        hover_event=False,
+        select_event=False,
+        key="city_gap_bar",
+    )
+
+if clicked_points:
+    selected_city_for_map = clicked_points[0]["x"]   # x 就是 city_clean
+else:
+    selected_city_for_map = None
+
 
 
 # ------------ Split ------------
@@ -177,25 +219,24 @@ if split:
     fig_unaff.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_unaff, use_container_width=True)
 
+# -------- Drill-down map --------
 st.markdown("---")
-st.subheader("ZIP-level affordability map (drill-down)")
+st.subheader("ZIP-level affordability map")
 
-city_for_map = st.selectbox(
-    "Choose a city to see ZIP-level affordability on the map:",
-    sorted_data["city_clean"].unique(),
-    key="zip_map_city",
-)
-
-zip_df = make_zip_view_data(
-    df,
-    city_name=city_for_map,
-    annual_income=final_income,
-    year=selected_year,
-    budget_pct=30.0,
-)
-
-if zip_df.empty:
-    st.info("No ZIP-level data for this city.")
+if selected_city_for_map is None:
+    st.info("Click a city bar above to see ZIP-level affordability map.")
 else:
-    render_zip_map_for_city(zip_df)
+    st.markdown(f"**Selected city:** {selected_city_for_map}")
 
+    zip_df = make_zip_view_data(
+        df,
+        city_name=selected_city_for_map,
+        annual_income=final_income,
+        year=selected_year,
+        budget_pct=30.0,
+    )
+
+    if zip_df.empty:
+        st.info("No ZIP-level data for this city.")
+    else:
+        render_zip_map_for_city(zip_df)
