@@ -181,6 +181,15 @@ if split:
 st.markdown("---")
 st.subheader("ZIP-level affordability map")
 
+city_options = sorted_data["city_clean"].tolist()
+default_city = city_options[0] if city_options else None
+
+selected_city_for_map = st.selectbox(
+    "Choose a city to see ZIP-level affordability:",
+    city_options,
+    index=0 if default_city else None,
+)
+
 if selected_city_for_map:
     zip_df = make_zip_view_data(
         df,
@@ -195,5 +204,5 @@ if selected_city_for_map:
     else:
         render_zip_map_for_city(zip_df, selected_city_for_map)
 else:
-    st.info("Click a city bar above to show its ZIP map.")
+    st.info("No city available for ZIP map.")
 
