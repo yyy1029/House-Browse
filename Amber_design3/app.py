@@ -4,7 +4,9 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 
-from dataprep import load_data, make_city_view_data
+# from dataprep import load_data, make_city_view_data
+from dataprep import load_data, make_city_view_data, make_zip_view_data
+
 from ui_components import income_control_panel
 
 
