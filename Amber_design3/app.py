@@ -95,42 +95,12 @@ with col1:
         unsafe_allow_html=True,
     )
 
-# with col2:
-#     st.subheader("Affordability gap by city")
-
-#     fig = px.bar(
-#         sorted_data,
-#         x="city_clean",
-#         y="gap_for_plot",
-#         color="affordable",
-#         color_discrete_map={True: "green", False: "red"},
-#         labels={
-#             "city_clean": "City",
-#             "gap_for_plot": "Distance from affordability boundary "
-#                             "(+ affordable, − unaffordable)",
-#         },
-#         hover_data={
-#             "city_clean": True,
-#             "Median Rent": ":.0f",
-#             "Per Capita Income": ":.0f",
-#             "afford_gap": ":.2f",
-#         },
-#         height=500,
-#     )
-
-#     fig.update_layout(
-#         xaxis_tickangle=-45,
-#         margin=dict(l=20, r=20, t=40, b=80),
-#     )
-
-#     st.plotly_chart(fig, use_container_width=True)
-
 with col2:
     st.subheader("Affordability gap by city")
 
     fig = px.bar(
         sorted_data,
-        x="city_clean",        
+        x="city_clean",
         y="gap_for_plot",
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
@@ -153,18 +123,48 @@ with col2:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    clicked_points = plotly_events(
-        fig,
-        click_event=True,
-        hover_event=False,
-        select_event=False,
-        key="city_gap_bar",
-    )
+    st.plotly_chart(fig, use_container_width=True)
 
-if clicked_points:
-    selected_city_for_map = clicked_points[0]["x"]  
-else:
-    selected_city_for_map = None
+# with col2:
+#     st.subheader("Affordability gap by city")
+
+#     fig = px.bar(
+#         sorted_data,
+#         x="city_clean",        
+#         y="gap_for_plot",
+#         color="affordable",
+#         color_discrete_map={True: "green", False: "red"},
+#         labels={
+#             "city_clean": "City",
+#             "gap_for_plot": "Distance from affordability boundary "
+#                             "(+ affordable, − unaffordable)",
+#         },
+#         hover_data={
+#             "city_clean": True,
+#             "Median Rent": ":.0f",
+#             "Per Capita Income": ":.0f",
+#             "afford_gap": ":.2f",
+#         },
+#         height=500,
+#     )
+
+#     fig.update_layout(
+#         xaxis_tickangle=-45,
+#         margin=dict(l=20, r=20, t=40, b=80),
+#     )
+
+#     clicked_points = plotly_events(
+#         fig,
+#         click_event=True,
+#         hover_event=False,
+#         select_event=False,
+#         key="city_gap_bar",
+#     )
+
+# if clicked_points:
+#     selected_city_for_map = clicked_points[0]["x"]  
+# else:
+#     selected_city_for_map = None
 
 
 
