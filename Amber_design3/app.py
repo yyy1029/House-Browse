@@ -5,7 +5,6 @@ import numpy as np
 import plotly.express as px
 
 from dataprep import load_data, make_city_view_data
-from zip_map import render_zip_map_for_city 
 from ui_components import income_control_panel
 from streamlit_plotly_events import plotly_events
 
