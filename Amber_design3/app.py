@@ -6,7 +6,7 @@ import plotly.express as px
 
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
-from streamlit_plotly_events import plotly_events
+# from streamlit_plotly_events import plotly_events
 
 # ---------- Load data ----------
 @st.cache_data
