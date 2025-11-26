@@ -15,19 +15,9 @@ LOCAL_TESTING = True  # 如果以后接 Databricks，可改为 False
 
 # ===== Helper: SQL or CSV =====
 def sql_query(query: str, csv_path: str = CSV_URL) -> pd.DataFrame:
-    """
-    LOCAL_TESTING=True:
-      - 直接读取 GitHub Releases 上的 CSV（通过 dataprep.CSV_URL）
-      - 标准化列名：zipcode→zip_code，Per Capita Income→per_capita_income，Median Rent→median_rent
-      - 支持根据 SQL 语句中 city='XXX' 的条件过滤
-    LOCAL_TESTING=False:
-      - 走 Databricks SQL 查询
-    """
     if LOCAL_TESTING:
-        # ✅ 直接读取线上 CSV（pandas 可自动识别 URL）
         df_full = pd.read_csv(csv_path)
 
-        # 列名标准化
         rename_map = {
             "zipcode": "zip_code",
             "Per Capita Income": "per_capita_income",
@@ -37,13 +27,11 @@ def sql_query(query: str, csv_path: str = CSV_URL) -> pd.DataFrame:
             if old in df_full.columns:
                 df_full = df_full.rename(columns={old: new})
 
-        # 生成 zip_code_str
         if "zip_code" in df_full.columns:
             df_full["zip_code_str"] = df_full["zip_code"].astype(str).str.zfill(5)
         elif "zipcode" in df_full.columns:
             df_full["zip_code_str"] = df_full["zipcode"].astype(str).str.zfill(5)
-
-        # 从 SQL 中提取城市过滤条件
+            
         match = re.search(r"WHERE\s+city\s*=\s*'(\w+)'", query, flags=re.IGNORECASE)
         city_abbr = match.group(1) if match else None
 
@@ -51,53 +39,32 @@ def sql_query(query: str, csv_path: str = CSV_URL) -> pd.DataFrame:
             return df_full[df_full.get("city") == city_abbr].copy()
         return df_full.copy()
 
-    # ===== Databricks 分支 =====
-    try:
-        from databricks import sql
-        from databricks.sdk.core import Config
-    except Exception as e:
-        raise RuntimeError(
-            "LOCAL_TESTING=False 但未安装 databricks 依赖，请先安装 databricks-sdk。"
-        ) from e
+    # # ===== Databricks 分支 =====
+    # try:
+    #     from databricks import sql
+    #     from databricks.sdk.core import Config
+    # except Exception as e:
+    #     raise RuntimeError(
+    #         "LOCAL_TESTING=False 但未安装 databricks 依赖，请先安装 databricks-sdk。"
+    #     ) from e
 
-    warehouse_id = os.getenv("DATABRICKS_WAREHOUSE_ID")
-    if not warehouse_id:
-        raise RuntimeError("DATABRICKS_WAREHOUSE_ID 未配置。")
+    # warehouse_id = os.getenv("DATABRICKS_WAREHOUSE_ID")
+    # if not warehouse_id:
+    #     raise RuntimeError("DATABRICKS_WAREHOUSE_ID 未配置。")
 
-    cfg = Config()
-    with sql.connect(
-        server_hostname=cfg.host,
-        http_path=f"/sql/1.0/warehouses/{warehouse_id}",
-        credentials_provider=lambda: cfg.authenticate,
-    ) as connection:
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            return cursor.fetchall_arrow().to_pandas()
+    # cfg = Config()
+    # with sql.connect(
+    #     server_hostname=cfg.host,
+    #     http_path=f"/sql/1.0/warehouses/{warehouse_id}",
+    #     credentials_provider=lambda: cfg.authenticate,
+    # ) as connection:
+    #     with connection.cursor() as cursor:
+    #         cursor.execute(query)
+    #         return cursor.fetchall_arrow().to_pandas()
 
 
 # ===== Loader: 按城市取 ZIP 粒度 =====
 def load_city_zip_data(city_abbr: str, *, csv_path: str = CSV_URL) -> pd.DataFrame:
-    """
-    返回指定城市的 ZIP 粒度数据。
-    输出列包括：
-      - zip_code / zip_code_str
-      - median_rent
-      - per_capita_income
-      - year（若有）
-    """
-    query = f"""
-        SELECT
-            city,
-            zipcode AS zip_code,
-            YEAR(date) AS year,
-            MEDIAN(median_rent) AS median_rent,
-            MEDIAN(per_capita_income) AS per_capita_income,
-            COUNT(*) AS n_records
-        FROM {TABLE_NAME}
-        WHERE city = '{city_abbr}'
-        GROUP BY city, zipcode, YEAR(date)
-        ORDER BY median_rent DESC
-    """
 
     df = sql_query(query, csv_path=csv_path).copy()
 
