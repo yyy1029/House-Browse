@@ -50,8 +50,18 @@ if "year" in df_zip.columns:
 df_zip_map = get_zip_coordinates(df_zip)
 
 # ③ 读城市 GeoJSON（推荐用你已有的 city_geojson）
-with open(f"city_geojson/{selected_city}.geojson", "r") as f:
+import os, json
+
+# 自动拼接完整路径，兼容本地 + 云端
+geojson_path = os.path.join(os.path.dirname(__file__), "city_geojson", f"{selected_city}.geojson")
+
+if not os.path.exists(geojson_path):
+    st.error(f"❌ GeoJSON file not found: {geojson_path}")
+    st.stop()
+
+with open(geojson_path, "r") as f:
     zip_geojson = json.load(f)
+
 
 # ④ 画图（用你现有的 Plotly 逻辑）
 fig_map = px.choropleth_mapbox(
