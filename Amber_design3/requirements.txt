@@ -6,3 +6,7 @@ pyarrow>=14.0
 altair>=5.0
 databricks-sdk>=0.26
 python-dotenv>=1.0
+geopandas
+shapely
+fiona
+pyproj
