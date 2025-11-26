@@ -21,12 +21,45 @@ st.title("Design 3 – Affordability Finder")
 
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
+# —— 侧边栏城市选择 ——（插入）
+with st.sidebar:
+    cities = sorted(df["city"].unique())
+    selected_city = st.selectbox("Select a city", cities, index=0, key="city_main")
 
-# ① 取 ZIP 数据（来自同学模块）
+# ========== 年份选择器（上移到此） ==========
+def year_selector(df: pd.DataFrame, key: str):
+    years = sorted(df["year"].unique())
+    return st.selectbox("Year", years, index=len(years) - 1, key=key)
+
+top_col1, top_col2 = st.columns([1, 2])
+with top_col1:
+    selected_year = year_selector(df, key="year_main")
+with top_col2:
+    sort_option = st.selectbox(
+        "Sort cities by",
+        ["City name", "Affordability gap", "Median rent", "Per capita income"],
+        key="sort_main",
+    )
+
+# ========== 年份选择器（上移到此） ==========
+def year_selector(df: pd.DataFrame, key: str):
+    years = sorted(df["year"].unique())
+    return st.selectbox("Year", years, index=len(years) - 1, key=key)
+
+top_col1, top_col2 = st.columns([1, 2])
+with top_col1:
+    selected_year = year_selector(df, key="year_main")
+with top_col2:
+    sort_option = st.selectbox(
+        "Sort cities by",
+        ["City name", "Affordability gap", "Median rent", "Per capita income"],
+        key="sort_main",
+    )
+
+# ========== ZIP 数据（现在 selected_year 已经有了） ==========
 df_zip = load_city_zip_data(selected_city)
-
-# （可选）按 year 过滤一层
-df_zip = df_zip[df_zip["year"] == selected_year] if "year" in df_zip.columns else df_zip
+if "year" in df_zip.columns:
+    df_zip = df_zip[df_zip["year"] == selected_year]
 
 # ② 补经纬度 + 计算比率
 df_zip_map = get_zip_coordinates(df_zip)
@@ -40,7 +73,7 @@ fig_map = px.choropleth_mapbox(
     df_zip_map,
     geojson=zip_geojson,
     locations="zip_code_int",
-    featureidkey="properties.ZCTA5CE10",  # 若不匹配，请改成你geojson里的字段
+    featureidkey="properties.ZCTA5CE10",  # 若不匹配，改成你的 geojson 属性字段
     color="affordability_norm",
     color_continuous_scale=[
         [0.0, "red"],
@@ -57,22 +90,23 @@ fig_map = px.choropleth_mapbox(
 )
 st.plotly_chart(fig_map, use_container_width=True)
 
-# ---------- Year selector ----------
-def year_selector(df: pd.DataFrame, key: str):
-    years = sorted(df["year"].unique())
-    return st.selectbox("Year", years, index=len(years) - 1, key=key)
+
+# # ---------- Year selector ----------
+# def year_selector(df: pd.DataFrame, key: str):
+#     years = sorted(df["year"].unique())
+#     return st.selectbox("Year", years, index=len(years) - 1, key=key)
 
 
-top_col1, top_col2 = st.columns([1, 2])
-with top_col1:
-    selected_year = year_selector(df, key="year_main")
+# top_col1, top_col2 = st.columns([1, 2])
+# with top_col1:
+#     selected_year = year_selector(df, key="year_main")
 
-with top_col2:
-    sort_option = st.selectbox(
-        "Sort cities by",
-        ["City name", "Affordability gap", "Median rent", "Per capita income"],
-        key="sort_main",
-    )
+# with top_col2:
+#     sort_option = st.selectbox(
+#         "Sort cities by",
+#         ["City name", "Affordability gap", "Median rent", "Per capita income"],
+#         key="sort_main",
+#     )
 
 
 # ---------- Prepare city-level data ----------
