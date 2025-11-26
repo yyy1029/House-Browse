@@ -41,21 +41,6 @@ with top_col2:
         key="sort_main",
     )
 
-# ========== 年份选择器（上移到此） ==========
-def year_selector(df: pd.DataFrame, key: str):
-    years = sorted(df["year"].unique())
-    return st.selectbox("Year", years, index=len(years) - 1, key=key)
-
-top_col1, top_col2 = st.columns([1, 2])
-with top_col1:
-    selected_year = year_selector(df, key="year_main")
-with top_col2:
-    sort_option = st.selectbox(
-        "Sort cities by",
-        ["City name", "Affordability gap", "Median rent", "Per capita income"],
-        key="sort_main",
-    )
-
 # ========== ZIP 数据（现在 selected_year 已经有了） ==========
 df_zip = load_city_zip_data(selected_city)
 if "year" in df_zip.columns:
@@ -89,24 +74,6 @@ fig_map = px.choropleth_mapbox(
     height=600
 )
 st.plotly_chart(fig_map, use_container_width=True)
-
-
-# # ---------- Year selector ----------
-# def year_selector(df: pd.DataFrame, key: str):
-#     years = sorted(df["year"].unique())
-#     return st.selectbox("Year", years, index=len(years) - 1, key=key)
-
-
-# top_col1, top_col2 = st.columns([1, 2])
-# with top_col1:
-#     selected_year = year_selector(df, key="year_main")
-
-# with top_col2:
-#     sort_option = st.selectbox(
-#         "Sort cities by",
-#         ["City name", "Affordability gap", "Median rent", "Per capita income"],
-#         key="sort_main",
-#     )
 
 
 # ---------- Prepare city-level data ----------
