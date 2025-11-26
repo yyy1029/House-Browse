@@ -21,10 +21,10 @@ st.title("Design 3 – Affordability Finder")
 
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
-# —— 侧边栏城市选择 ——（插入）
-with st.sidebar:
-    cities = sorted(df["city"].unique())
-    selected_city = st.selectbox("Select a city", cities, index=0, key="city_main")
+# # —— 侧边栏城市选择 ——（插入）
+# with st.sidebar:
+#     cities = sorted(df["city"].unique())
+#     selected_city = st.selectbox("Select a city", cities, index=0, key="city_main")
 
 # ========== 年份选择器（上移到此） ==========
 def year_selector(df: pd.DataFrame, key: str):
@@ -40,6 +40,14 @@ with top_col2:
         ["City name", "Affordability gap", "Median rent", "Per capita income"],
         key="sort_main",
     )
+# —— 城市选择器：现在放在 Year + Sort 下方 —— 
+cities = sorted(df["city"].unique())
+selected_city = st.selectbox(
+    "Select a city",
+    options=cities,
+    index=cities.index(cities[0]),
+    key="city_main",
+)
 
 # ========== ZIP 数据（现在 selected_year 已经有了） ==========
 df_zip = load_city_zip_data(selected_city)
