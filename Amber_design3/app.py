@@ -6,6 +6,8 @@ import plotly.express as px
 
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
+from dataprep import make_zip_view_data #align with the make_zip_view_data
+
 # from streamlit_plotly_events import plotly_events
 
 # ---------- Load data ----------
@@ -174,4 +176,7 @@ if split:
     )
     fig_unaff.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_unaff, use_container_width=True)
+
+
+
 
