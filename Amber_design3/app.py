@@ -220,8 +220,8 @@ with top_col2:
 # 获取用户选择的城市、年收入和年份
 with st.sidebar:
     selected_city = st.selectbox("Select a city:", ["NY", "LA", "Chicago", "Houston", "Dallas"])
-    final_income = st.slider("Annual Income", min_value=20000, max_value=200000, step=5000, value=50000)
-    selected_year = year_selector(df, key="year_main")  # 保留原有的年份选择器
+    # final_income = st.slider("Annual Income", min_value=20000, max_value=200000, step=5000, value=50000)
+    # selected_year = year_selector(df, key="year_main")  # 保留原有的年份选择器
 
 # ---------- Prepare ZIP code-level data ----------
 df_zip = make_zip_view_data(df, city_name=selected_city, annual_income=final_income, year=selected_year)
