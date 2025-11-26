@@ -10,3 +10,4 @@ geopandas
 shapely
 fiona
 pyproj
+pgeocode
