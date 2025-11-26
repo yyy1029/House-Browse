@@ -6,8 +6,6 @@ import plotly.express as px
 
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
-from dataprep import make_zip_view_data #align with the make_zip_view_data
-
 # from streamlit_plotly_events import plotly_events
 
 # ---------- Load data ----------
