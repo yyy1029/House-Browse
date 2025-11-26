@@ -3,7 +3,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
+import json  
+from zip_module import load_city_zip_data, get_zip_coordinates
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
 # from streamlit_plotly_events import plotly_events
@@ -21,6 +22,40 @@ st.title("Design 3 – Affordability Finder")
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
 
+# ① 取 ZIP 数据（来自同学模块）
+df_zip = load_city_zip_data(selected_city)
+
+# （可选）按 year 过滤一层
+df_zip = df_zip[df_zip["year"] == selected_year] if "year" in df_zip.columns else df_zip
+
+# ② 补经纬度 + 计算比率
+df_zip_map = get_zip_coordinates(df_zip)
+
+# ③ 读城市 GeoJSON（推荐用你已有的 city_geojson）
+with open(f"city_geojson/{selected_city}.geojson", "r") as f:
+    zip_geojson = json.load(f)
+
+# ④ 画图（用你现有的 Plotly 逻辑）
+fig_map = px.choropleth_mapbox(
+    df_zip_map,
+    geojson=zip_geojson,
+    locations="zip_code_int",
+    featureidkey="properties.ZCTA5CE10",  # 若不匹配，请改成你geojson里的字段
+    color="affordability_norm",
+    color_continuous_scale=[
+        [0.0, "red"],
+        [0.5, "yellow"],
+        [1.0, "green"],
+    ],
+    range_color=[0, 1],
+    hover_name="zip_code_str",
+    hover_data={"median_rent": True, "monthly_income": True, "affordability_ratio": ":.2f"},
+    mapbox_style="carto-positron",
+    center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
+    zoom=10,
+    height=600
+)
+st.plotly_chart(fig_map, use_container_width=True)
 
 # ---------- Year selector ----------
 def year_selector(df: pd.DataFrame, key: str):
