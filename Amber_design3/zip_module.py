@@ -14,30 +14,51 @@ LOCAL_TESTING = True  # 如果以后接 Databricks，可改为 False
 
 
 # ===== Helper: SQL or CSV =====
-def sql_query(query: str, csv_path: str = CSV_URL) -> pd.DataFrame:
-    if LOCAL_TESTING:
-        df_full = pd.read_csv(csv_path)
+def load_city_zip_data(city_abbr: str, *, csv_path: str = CSV_URL) -> pd.DataFrame:
+    """
+    返回指定城市的 ZIP 粒度数据（直接读取 CSV_URL，不依赖 sql_query）。
+    输出列包括：
+      - zip_code / zip_code_str
+      - median_rent
+      - per_capita_income
+      - year（若有）
+    """
+    # 1) 直接读 CSV（支持 GitHub Releases URL）
+    df_full = pd.read_csv(csv_path)
 
-        rename_map = {
-            "zipcode": "zip_code",
-            "Per Capita Income": "per_capita_income",
-            "Median Rent": "median_rent",
-        }
-        for old, new in rename_map.items():
-            if old in df_full.columns:
-                df_full = df_full.rename(columns={old: new})
+    # 2) 列名统一
+    rename_map = {
+        "zipcode": "zip_code",
+        "Per Capita Income": "per_capita_income",
+        "Median Rent": "median_rent",
+    }
+    for old, new in rename_map.items():
+        if old in df_full.columns:
+            df_full = df_full.rename(columns={old: new})
 
-        if "zip_code" in df_full.columns:
-            df_full["zip_code_str"] = df_full["zip_code"].astype(str).str.zfill(5)
-        elif "zipcode" in df_full.columns:
-            df_full["zip_code_str"] = df_full["zipcode"].astype(str).str.zfill(5)
-            
-        match = re.search(r"WHERE\s+city\s*=\s*'(\w+)'", query, flags=re.IGNORECASE)
-        city_abbr = match.group(1) if match else None
+    # 3) 生成 zip_code_str
+    if "zip_code" in df_full.columns:
+        df_full["zip_code_str"] = df_full["zip_code"].astype(str).str.zfill(5)
+    elif "zipcode" in df_full.columns:
+        df_full["zip_code_str"] = df_full["zipcode"].astype(str).str.zfill(5)
 
-        if city_abbr:
-            return df_full[df_full.get("city") == city_abbr].copy()
-        return df_full.copy()
+    # 4) 过滤城市
+    if "city" in df_full.columns:
+        df = df_full[df_full["city"] == city_abbr].copy()
+    else:
+        # 没有 city 列就返回全量（避免空表崩溃）
+        df = df_full.copy()
+
+    # 5) 补 year（如果没有 YEAR(date)）
+    if "year" not in df.columns and "date" in df.columns:
+        try:
+            df["date"] = pd.to_datetime(df["date"])
+            df["year"] = df["date"].dt.year
+        except Exception:
+            pass  # 无法解析就略过
+
+    return df
+
 
     # # ===== Databricks 分支 =====
     # try:
