@@ -58,43 +58,53 @@ if "year" in df_zip.columns:
 
 df_zip_map = get_zip_coordinates(df_zip)
 
-# 读该城市的 GeoJSON
-geojson_path = os.path.join(
-    os.path.dirname(__file__), "city_geojson", f"{selected_city}.geojson"
-)
-if not os.path.exists(geojson_path):
-    st.error(f"❌ GeoJSON file not found: {geojson_path}")
-    st.stop()
+# Debugging step to check if df_zip_map has the correct columns
+st.write("### Debugging: Checking df_zip_map Columns")
+st.write(df_zip_map.head())  # Check the first few rows to confirm columns
 
-with open(geojson_path, "r") as f:
-    zip_geojson = json.load(f)
+# Check if the necessary columns exist in df_zip_map
+required_columns = ["zip_code_int", "affordability_norm", "lat", "lon"]
+missing_columns = [col for col in required_columns if col not in df_zip_map.columns]
+if missing_columns:
+    st.error(f"❌ Missing columns in df_zip_map: {missing_columns}")
+else:
+    # Proceed to generate map only if required columns exist
+    geojson_path = os.path.join(
+        os.path.dirname(__file__), "city_geojson", f"{selected_city}.geojson"
+    )
+    if not os.path.exists(geojson_path):
+        st.error(f"❌ GeoJSON file not found: {geojson_path}")
+        st.stop()
 
-# Choropleth map：颜色基于 price_to_income_zip 归一化后的 affordability_norm
-fig_map = px.choropleth_mapbox(
-    df_zip_map,
-    geojson=zip_geojson,
-    locations="zip_code_int",
-    featureidkey="properties.ZCTA5CE10",
-    color="affordability_norm",
-    color_continuous_scale=[
-        [0.0, "green"],   # 更便宜（price-to-income 低）
-        [0.5, "yellow"],
-        [1.0, "red"],     # 更贵（price-to-income 高）
-    ],
-    range_color=[0, 1],
-    hover_name="zip_code_str",
-    hover_data={
-        "median_sale_price": ":,.0f",
-        "per_capita_income": ":,.0f",
-        "price_to_income_zip": ":.2f",
-    },
-    mapbox_style="carto-positron",
-    center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
-    zoom=10,
-    height=600
-)
-fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0))
-st.plotly_chart(fig_map, use_container_width=True)
+    with open(geojson_path, "r") as f:
+        zip_geojson = json.load(f)
+
+    # Choropleth map：颜色基于 price_to_income_zip 归一化后的 affordability_norm
+    fig_map = px.choropleth_mapbox(
+        df_zip_map,
+        geojson=zip_geojson,
+        locations="zip_code_int",
+        featureidkey="properties.ZCTA5CE10",
+        color="affordability_norm",
+        color_continuous_scale=[
+            [0.0, "green"],   # 更便宜（price-to-income 低）
+            [0.5, "yellow"],
+            [1.0, "red"],     # 更贵（price-to-income 高）
+        ],
+        range_color=[0, 1],
+        hover_name="zip_code_str",
+        hover_data={
+            "median_sale_price": ":,.0f",
+            "per_capita_income": ":,.0f",
+            "price_to_income_zip": ":.2f",
+        },
+        mapbox_style="carto-positron",
+        center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
+        zoom=10,
+        height=600
+    )
+    fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+    st.plotly_chart(fig_map, use_container_width=True)
 
 # ---------- Prepare city-level data (price-to-income version) ----------
 city_data = make_city_view_data(
