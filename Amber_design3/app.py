@@ -29,7 +29,8 @@ MAX_ZIP_RATIO_CLIP = 15.0
 
 
 # ---------- Load data ----------
-@st.cache_data
+# @st.cache_data
+st.cache_data.clear()
 def get_data():
     return load_data()
 
