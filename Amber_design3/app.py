@@ -222,4 +222,7 @@ if split:
             "Per Capita Income": ":,.0f",
             "price_to_income": ":.2f",
         },
-       
+        height=380,
+    )
+    fig_unaff.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(fig_unaff, use_container_width=True)
