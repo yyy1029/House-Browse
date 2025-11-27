@@ -29,13 +29,12 @@ MAX_ZIP_RATIO_CLIP = 15.0
 
 
 # ---------- Load data ----------
-# @st.cache_data
-st.cache_data.clear()
+@st.cache_data
 def get_data():
+    st.cache_data.clear()  
+    
     return load_data()
 
-
-df = get_data()
 
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
