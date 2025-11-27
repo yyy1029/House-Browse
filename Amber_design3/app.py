@@ -161,54 +161,7 @@ main_left, main_right = st.columns([1.1, 1.6])
 #         st.session_state.selected_city = clicked[0]["x"]
 
 #     st.plotly_chart(fig_city, use_container_width=True)
-with main_left:
-    # Profile card （保持不变）
-    st.markdown(""" ... """, unsafe_allow_html=True)
 
-    st.subheader("Price-to-income ratio by city")
-
-    fig_city = px.bar(
-        sorted_data,
-        x="city_clean",
-        y=RATIO_COL,
-        color="affordable",
-        color_discrete_map={True: "green", False: "red"},
-        labels={
-            "city_clean": "City",
-            RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
-        },
-        hover_data={
-            "city_clean": True,
-            "Median Sale Price": ":,.0f",
-            "Per Capita Income": ":,.0f",
-            RATIO_COL: ":.2f",
-        },
-        height=500,
-    )
-
-    fig_city.add_hline(
-        y=AFFORDABILITY_THRESHOLD,
-        line_dash="dash",
-        line_color="black",
-        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
-        annotation_position="top left",
-    )
-
-    fig_city.update_layout(
-        xaxis_tickangle=-45,
-        margin=dict(l=20, r=20, t=40, b=80),
-    )
-
-    # 用 plotly_events 来“画图 + 捕捉点击”
-    clicked = plotly_events(
-        fig_city,
-        click_event=True,
-        key="bar_chart_city",
-        override_height=500,
-    )
-    if clicked:
-        # x 的值就是 city_clean
-        st.session_state.selected_city = clicked[0]["x"]
 
 
     # Optional split view button (still left column)
@@ -275,7 +228,83 @@ with main_left:
         fig_unaff.update_layout(xaxis_tickangle=-45)
         st.plotly_chart(fig_unaff, use_container_width=True)
 
+with main_left:
+    # Profile card
+    st.markdown(
+        """
+        <div style="
+            padding: 1.2rem 1.4rem;
+            background-color: #f7f7fb;
+            border-radius: 12px;
+            border: 1px solid #e0e0f0;
+            margin-bottom: 1rem;
+            ">
+            <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
+            <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
+            <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
+            <p style="margin:0.1rem 0;"><strong>Housing budget (Rent):</strong> 30% of income (for reference)</p>
+            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
+            <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
+            <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
+                City-level affordability uses <em>Median Sale Price / Per Capita Income</em>.
+            </p>
+        </div>
+        """.format(
+            persona=persona,
+            income=int(final_income),
+            rent=max_rent,
+            year=selected_year,
+        ),
+        unsafe_allow_html=True,
+    )
 
+    st.subheader("Price-to-income ratio by city")
+
+    # ---- build the figure (样子和你要的那张一样) ----
+    fig_city = px.bar(
+        sorted_data,
+        x="city_clean",
+        y=RATIO_COL,
+        color="affordable",
+        color_discrete_map={True: "green", False: "red"},
+        labels={
+            "city_clean": "City",
+            RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+        },
+        hover_data={
+            "city_clean": True,
+            "Median Sale Price": ":,.0f",
+            "Per Capita Income": ":,.0f",
+            RATIO_COL: ":.2f",
+        },
+        height=500,
+    )
+
+    fig_city.add_hline(
+        y=AFFORDABILITY_THRESHOLD,
+        line_dash="dash",
+        line_color="black",
+        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
+        annotation_position="top left",
+    )
+
+    fig_city.update_layout(
+        xaxis_tickangle=-45,
+        margin=dict(l=20, r=20, t=40, b=80),
+    )
+
+    # ---- 用 plotly_events 来“画图 + 捕捉点击”，不再额外 st.plotly_chart ----
+    clicked = plotly_events(
+        fig_city,
+        click_event=True,
+        hover_event=False,
+        select_event=False,
+        key="bar_chart_city",
+        override_height=500,
+    )
+    if clicked:
+        # x value is city_clean
+        st.session_state.selected_city = clicked[0]["x"]
 # ========= RIGHT: ZIP-level map (zoom-in after click) =========
 with main_right:
     st.subheader("ZIP-code price-to-income map")
