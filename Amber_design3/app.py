@@ -82,8 +82,9 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# profile max rent (for display only)
-max_rent = final_income * 0.3 / 12.0
+# Calculate max affordable rent based on price-to-income ratio and income
+max_affordable_rent = selected_city_data[RATIO_COL] * final_income / 12
+
 
 
 # =====================================================================
