@@ -118,7 +118,7 @@ with sec1_col1:
         """.format(
             persona=persona,
             income=int(final_income),
-            rent=max_rent,
+            # rent=max_rent,
             year=selected_year,
         ),
         unsafe_allow_html=True,
