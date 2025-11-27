@@ -16,7 +16,6 @@ def load_city_zip_data(city_abbr: str, *, csv_path: str = CSV_URL) -> pd.DataFra
         "zipcode": "zip_code",
         "Per Capita Income": "per_capita_income",
         "Median Rent": "median_rent",
-        "median_sale_price": "median_sale_price",  # Ensure median_sale_price is in the data
     }
     for old, new in rename_map.items():
         if old in df_full.columns:
@@ -42,7 +41,7 @@ def load_city_zip_data(city_abbr: str, *, csv_path: str = CSV_URL) -> pd.DataFra
     return df
 
 def get_zip_coordinates(df_zip: pd.DataFrame) -> pd.DataFrame:
-    """pgeocode 补经纬度 + 计算 price-to-income 指标。"""
+    """pgeocode 补经纬度 + 计算 affordability 指标。"""
     if df_zip is None or df_zip.empty:
         return df_zip.copy()
 
@@ -56,33 +55,24 @@ def get_zip_coordinates(df_zip: pd.DataFrame) -> pd.DataFrame:
         else:
             raise KeyError("缺少 zip_code / zipcode 字段。")
 
-    if "median_sale_price" not in out.columns:
-        if "Median Sale Price" in out.columns:
-            out = out.rename(columns={"Median Sale Price": "median_sale_price"})
-            
-    if "per_capita_income" not in out.columns:
-        if "Per Capita Income" in out.columns:
-            out = out.rename(columns={"Per Capita Income": "per_capita_income"})
+    if "median_rent" not in out.columns and "Median Rent" in out.columns:
+        out = out.rename(columns={"Median Rent": "median_rent"})
+    if "per_capita_income" not in out.columns and "Per Capita Income" in out.columns:
+        out = out.rename(columns={"Per Capita Income": "per_capita_income"})
 
-    # Calculate price-to-income ratio
-    out["price_to_income_ratio"] = out["median_sale_price"] / out["per_capita_income"]
-
-    # Calculate affordability based on price-to-income ratio
-    threshold = out["price_to_income_ratio"].median()
-    out["affordability_gap"] = threshold - out["price_to_income_ratio"]
-    out["affordable"] = out["affordability_gap"] >= 0  # affordable if gap >= 0
-
-    # Add latitude and longitude with pgeocode
     nomi = pgeocode.Nominatim("us")
     geo = nomi.query_postal_code(out["zip_code_str"].tolist())
-    
-    if geo.isna().any():  # Check if there are any NaN values
-        out["lat"] = np.nan
-        out["lon"] = np.nan
-    else:
-        out["lat"] = geo["latitude"].values
-        out["lon"] = geo["longitude"].values
-    
+
+    out["lat"] = geo["latitude"].values
+    out["lon"] = geo["longitude"].values
     out = out.dropna(subset=["lat", "lon"]).copy()
 
+    out["zip_code_int"] = out["zip_code_str"].astype(int)
+    out["monthly_income"] = out["per_capita_income"] / 12.0
+    denom = (0.3 * out["monthly_income"]).replace(0, np.nan)
+    out["affordability_ratio"] = out["median_rent"] / denom
+    out["affordability_norm"] = (np.clip(out["affordability_ratio"], 0, 2) / 2.0)
+
     return out
+
+__all__ = ["LOCAL_TESTING", "TABLE_NAME", "load_city_zip_data", "get_zip_coordinates"]
