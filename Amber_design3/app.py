@@ -59,7 +59,8 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# Build gap_for_plot (distance to threshold, signed)
+# city_data already has RATIO_COL and "affordable"
+# Build gap_for_plot if you still want it (distance to threshold, signed)
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
@@ -77,7 +78,7 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# Only for profile card display
+# This is only for profile card display (does not affect P/I ratio)
 max_rent = final_income * 0.3 / 12.0
 
 
@@ -117,7 +118,6 @@ with main_left:
 
     st.subheader("Price-to-income ratio by city")
 
-    # 主图：和你同学的一样写法
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
@@ -137,20 +137,31 @@ with main_left:
         height=500,
     )
 
+    fig_city.add_hline(
+        y=AFFORDABILITY_THRESHOLD,
+        line_dash="dash",
+        line_color="black",
+        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
+        annotation_position="top left",
+    )
+
     fig_city.update_layout(
         xaxis_tickangle=-45,
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # 只用 plotly_events 来“画 + 监听”
+    # Click interaction: store selected city in session_state
     clicked = plotly_events(
         fig_city,
         click_event=True,
-        key=f"bar_chart_{selected_year}_{sort_option}",  # key 跟着控件变化，强制刷新
+        key="bar_chart_city",
         override_height=500,
     )
     if clicked:
+        # x value is city_clean
         st.session_state.selected_city = clicked[0]["x"]
+
+    st.plotly_chart(fig_city, use_container_width=True)
 
     # Optional split view button (still left column)
     split = st.button("Split affordability chart")
@@ -306,8 +317,4 @@ with main_right:
                         ),
                     )
 
-                    st.plotly_chart(
-                        fig_map,
-                        use_container_width=True,
-                        config={"scrollZoom": True},  # enable scroll wheel zoom
-                    )
+                    st.plotly_chart(fig_map, use_container_width=True)
