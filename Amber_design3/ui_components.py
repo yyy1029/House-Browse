@@ -68,7 +68,7 @@ def income_control_panel():
 
     We evaluate affordability using:
 
-    > **Rent / Monthly Per-Capita Income**
+    > Rent / Monthly Per-Capita Income
 
     Cities with a ratio **≤ 0.30** are considered affordable.
     """
