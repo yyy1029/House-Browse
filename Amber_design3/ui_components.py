@@ -1,4 +1,3 @@
-# ui_components.py
 """
 Reusable UX-style control panel components for Design 3.
 """
@@ -25,7 +24,7 @@ def income_control_panel():
         help="We use this to suggest a starting income level.",
     )
 
-    # persona default incomes
+    # Persona default incomes
     persona_defaults = {
         "Student": 30000,
         "Young professional": 60000,
@@ -63,15 +62,16 @@ def income_control_panel():
 
     st.sidebar.markdown("---")
     st.sidebar.markdown(
-    """
-    **Price-to-Income rule**
+        """
+        **Price-to-Income rule**
 
-    We evaluate affordability using:
+        We evaluate housing affordability using:
 
-    > **Rent / Monthly Per-Capita Income**
+        > **Median Sale Price / Per Capita Income**
 
-    Cities with a ratio **≤ 0.30** are considered affordable.
-    """
-)
+        Lower ratios indicate better affordability.  
+        In this dashboard, cities with a ratio **≤ 5.0** are treated as relatively more affordable.
+        """
+    )
 
     return final_income, persona
