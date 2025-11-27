@@ -1,4 +1,3 @@
-# zipmodule.py
 from __future__ import annotations
 import os
 import pandas as pd
@@ -76,9 +75,14 @@ def get_zip_coordinates(df_zip: pd.DataFrame) -> pd.DataFrame:
     # Add latitude and longitude with pgeocode
     nomi = pgeocode.Nominatim("us")
     geo = nomi.query_postal_code(out["zip_code_str"].tolist())
-
-    out["lat"] = geo["latitude"].values
-    out["lon"] = geo["longitude"].values
+    
+    if geo.isna().any():  # Check if there are any NaN values
+        out["lat"] = np.nan
+        out["lon"] = np.nan
+    else:
+        out["lat"] = geo["latitude"].values
+        out["lon"] = geo["longitude"].values
+    
     out = out.dropna(subset=["lat", "lon"]).copy()
 
     return out
