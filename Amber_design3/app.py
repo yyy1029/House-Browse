@@ -82,8 +82,8 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# # profile max rent (for display only)
-# max_rent = final_income * 0.3 / 12.0
+# profile max rent (for display only)
+max_rent = final_income * 0.3 / 12.0
 
 
 # =====================================================================
@@ -107,7 +107,7 @@ with sec1_col1:
             <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
             <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
-            # <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
+            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
             <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
                 City affordability here uses
@@ -118,7 +118,7 @@ with sec1_col1:
         """.format(
             persona=persona,
             income=int(final_income),
-            # rent=max_rent,
+            rent=max_rent,
             year=selected_year,
         ),
         unsafe_allow_html=True,
