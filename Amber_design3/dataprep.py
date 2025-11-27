@@ -3,7 +3,6 @@ import numpy as np
 
 CSV_URL = "https://github.com/yyy1029/House-Browse/releases/download/v1.0/HouseTS.csv"
 
-
 def load_data() -> pd.DataFrame:
     """
     Load HouseTS.csv from GitHub Releases and compute key derived fields.
@@ -93,7 +92,6 @@ def make_city_history(df: pd.DataFrame, city_name: str) -> pd.DataFrame:
         .sort_values("year")
     )
     return hist
-
 
 def make_zip_view_data(
     df: pd.DataFrame,
