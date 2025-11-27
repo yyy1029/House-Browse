@@ -17,11 +17,15 @@ from ui_components import income_control_panel
 st.set_page_config(page_title="Design 3 – Affordability Finder", layout="wide")
 st.title("Design 3 – Affordability Finder")
 
+st.markdown(
+    """
+    Use this tool to **compare cities by house price-to-income ratio**,  
+    then **click a bar** to zoom into ZIP-code details for that city.
+    """
+)
+
 # For ZIP map clipping
 MAX_ZIP_RATIO_CLIP = 15.0
-
-# User affordability: how many times of user's annual income
-USER_PRICE_MULTIPLIER = 4.0  # e.g. can afford houses up to 4x annual income
 
 
 # ---------- Load data ----------
@@ -35,24 +39,22 @@ df = get_data()
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
 
-
-# ---------- Year selector ----------
+# ---------- Top controls: year + sort ----------
 def year_selector(df: pd.DataFrame, key: str):
     years = sorted(df["year"].unique())
     return st.selectbox("Year", years, index=len(years) - 1, key=key)
 
 
-top_col1, top_col2 = st.columns([1, 2])
-with top_col1:
+controls_col1, controls_col2 = st.columns([1, 2])
+with controls_col1:
     selected_year = year_selector(df, key="year_main")
 
-with top_col2:
+with controls_col2:
     sort_option = st.selectbox(
         "Sort cities by",
         ["City name", "Price-to-income ratio", "Median sale price", "Per capita income"],
         key="sort_main",
     )
-
 
 # ---------- Prepare city-level data ----------
 city_data = make_city_view_data(
@@ -62,7 +64,7 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# City-level affordability (intrinsic, based on city data only)
+# city_data already has RATIO_COL and "affordable"
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
@@ -70,23 +72,7 @@ city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
 if "city_clean" not in city_data.columns:
     city_data["city_clean"] = city_data["city"]
 
-# ---------- User-level affordability (depends on final_income) ----------
-# Max house price user can afford (simple rule: multiplier * annual income)
-user_max_price = final_income * USER_PRICE_MULTIPLIER
-city_data["user_max_price"] = user_max_price
-
-# User affordability: can the user afford the median house in this city?
-city_data["user_affordable"] = city_data["Median Sale Price"] <= city_data["user_max_price"]
-
-# Labels for plotting
-city_data["city_afford_label"] = np.where(
-    city_data["affordable"], "Affordable city (by ratio)", "Expensive city (by ratio)"
-)
-city_data["user_afford_label"] = np.where(
-    city_data["user_affordable"], "Within your budget", "Above your budget"
-)
-
-# ---------- Sort city-level data ----------
+# sort
 if sort_option == "Price-to-income ratio":
     sorted_data = city_data.sort_values(RATIO_COL, ascending=True)
 elif sort_option == "Median sale price":
@@ -96,15 +82,18 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# Only for profile card display
+# profile max rent (for display only)
 max_rent = final_income * 0.3 / 12.0
 
 
-# ---------- Main layout: left (profile + bar) / right (map) ----------
-main_left, main_right = st.columns([1.1, 1.6])
+# =====================================================================
+#   SECTION 1 – Profile + dataset summary
+# =====================================================================
+st.markdown("### 1. Your profile and dataset overview")
 
-# ========= LEFT: profile + city bar chart =========
-with main_left:
+sec1_col1, sec1_col2 = st.columns([1.1, 1.2])
+
+with sec1_col1:
     # Profile card
     st.markdown(
         """
@@ -118,12 +107,13 @@ with main_left:
             <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
             <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
-            <p style="margin:0.1rem 0;"><strong>Housing budget (Rent):</strong> 30% of income (for reference)</p>
-            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
+            <p style="margin:0.1rem 0;"><strong>Housing budget (rent rule):</strong> 30% of income (for reference)</p>
+            <p style="margin:0.1rem 0;"><strong>Max rent under 30%:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
             <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
-                City-level affordability uses <em>Median Sale Price / Per Capita Income</em> (lower is better).<br/>
-                Your affordability is compared to <em>{multiplier}× your annual income</em>.
+                City affordability here uses
+                <em>Median Sale Price / Per Capita Income</em>
+                (lower = more affordable at the city level).
             </p>
         </div>
         """.format(
@@ -131,197 +121,237 @@ with main_left:
             income=int(final_income),
             rent=max_rent,
             year=selected_year,
-            multiplier=USER_PRICE_MULTIPLIER,
         ),
         unsafe_allow_html=True,
     )
 
-    st.subheader("Price-to-income ratio by city")
+with sec1_col2:
+    total_cities = len(city_data)
+    num_affordable = int((city_data["affordable"]).sum())
+    median_ratio = city_data[RATIO_COL].median()
 
-    # Color = city intrinsic affordability, Pattern = user affordability
-    fig_city = px.bar(
-        sorted_data,
+    st.markdown(
+        f"""
+        **Dataset snapshot – {selected_year}**
+
+        - Cities in dataset: **{total_cities}**
+        - Cities with price-to-income ratio ≤ **{AFFORDABILITY_THRESHOLD:.1f}**:  
+          **{num_affordable}** ({num_affordable / total_cities:,.0%} of all cities)
+        - Median city ratio: **{median_ratio:,.2f}**
+
+        You can treat this threshold as a rough cut where  
+        house prices above **{AFFORDABILITY_THRESHOLD:.1f}×** local per-capita income  
+        start to look less affordable.
+        """
+    )
+
+
+# =====================================================================
+#   SECTION 2 – City bar chart (click to drill down)
+# =====================================================================
+st.markdown("### 2. Compare cities by price-to-income ratio")
+
+# Make a label for color legend (more readable than bare True/False)
+sorted_data["afford_label"] = np.where(
+    sorted_data["affordable"], "Affordable (≤ threshold)", "Less affordable (> threshold)"
+)
+
+fig_city = px.bar(
+    sorted_data,
+    x="city_clean",
+    y=RATIO_COL,
+    color="afford_label",
+    color_discrete_map={
+        "Affordable (≤ threshold)": "green",
+        "Less affordable (> threshold)": "red",
+    },
+    labels={
+        "city_clean": "City",
+        RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+        "afford_label": "Affordability (dataset rule)",
+    },
+    hover_data={
+        "city_clean": True,
+        "Median Sale Price": ":,.0f",
+        "Per Capita Income": ":,.0f",
+        RATIO_COL: ":.2f",
+    },
+    height=520,
+)
+
+# Horizontal line for dataset threshold
+fig_city.add_hline(
+    y=AFFORDABILITY_THRESHOLD,
+    line_dash="dash",
+    line_color="black",
+    annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
+    annotation_position="top left",
+)
+
+# Layout tuning for aesthetics
+fig_city.update_layout(
+    xaxis_tickangle=-45,
+    margin=dict(l=20, r=20, t=40, b=80),
+    bargap=0.05,
+    bargroupgap=0.0,
+)
+
+# Make bars nice and thick
+fig_city.update_traces(width=0.8)
+
+st.caption("Tip: click a bar to see ZIP-level details for that city below.")
+
+# Draw + listen in one step
+clicked = plotly_events(
+    fig_city,
+    click_event=True,
+    hover_event=True,
+    select_event=False,
+    key=f"bar_chart_city_{selected_year}_{sort_option}",
+    override_height=520,
+)
+
+if clicked:
+    st.session_state.selected_city = clicked[0]["x"]
+
+
+# Optional: split chart (below main bar)
+with st.expander("Show separate charts for more / less affordable cities"):
+    affordable_data = sorted_data[sorted_data["affordable"]].sort_values(
+        RATIO_COL, ascending=True
+    )
+    unaffordable_data = sorted_data[~sorted_data["affordable"]].sort_values(
+        RATIO_COL, ascending=False
+    )
+
+    st.subheader(f"More affordable cities (ratio ≤ {AFFORDABILITY_THRESHOLD:.1f})")
+    fig_aff = px.bar(
+        affordable_data,
         x="city_clean",
         y=RATIO_COL,
-        color="city_afford_label",
-        pattern_shape="user_afford_label",
+        color="afford_label",
         color_discrete_map={
-            "Affordable city (by ratio)": "green",
-            "Expensive city (by ratio)": "red",
-        },
-        pattern_shape_map={
-            "Within your budget": "",
-            "Above your budget": ".",
+            "Affordable (≤ threshold)": "green",
+            "Less affordable (> threshold)": "red",
         },
         labels={
             "city_clean": "City",
-            RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
-            "city_afford_label": "City-level affordability",
-            "user_afford_label": "Your affordability",
+            RATIO_COL: "Price-to-income ratio",
         },
         hover_data={
             "city_clean": True,
             "Median Sale Price": ":,.0f",
             "Per Capita Income": ":,.0f",
             RATIO_COL: ":.2f",
-            "user_afford_label": True,
         },
-        height=500,
+        height=360,
     )
-
-    fig_city.add_hline(
+    fig_aff.add_hline(
         y=AFFORDABILITY_THRESHOLD,
         line_dash="dash",
         line_color="black",
-        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
-        annotation_position="top left",
     )
+    fig_aff.update_layout(xaxis_tickangle=-45, bargap=0.1)
+    st.plotly_chart(fig_aff, use_container_width=True)
 
-    fig_city.update_layout(
-        xaxis_tickangle=-45,
-        margin=dict(l=20, r=20, t=40, b=80),
+    st.subheader(f"Less affordable cities (ratio > {AFFORDABILITY_THRESHOLD:.1f})")
+    fig_unaff = px.bar(
+        unaffordable_data,
+        x="city_clean",
+        y=RATIO_COL,
+        color="afford_label",
+        color_discrete_map={
+            "Affordable (≤ threshold)": "green",
+            "Less affordable (> threshold)": "red",
+        },
+        labels={
+            "city_clean": "City",
+            RATIO_COL: "Price-to-income ratio",
+        },
+        hover_data={
+            "city_clean": True,
+            "Median Sale Price": ":,.0f",
+            "Per Capita Income": ":,.0f",
+            RATIO_COL: ":.2f",
+        },
+        height=360,
     )
-
-    # Use plotly_events to both render and capture clicks
-    clicked = plotly_events(
-        fig_city,
-        click_event=True,
-        hover_event=True,
-        select_event=False,
-        key=f"bar_chart_city_{selected_year}_{sort_option}_{int(final_income)}",
-        override_height=500,
+    fig_unaff.add_hline(
+        y=AFFORDABILITY_THRESHOLD,
+        line_dash="dash",
+        line_color="black",
     )
-    if clicked:
-        st.session_state.selected_city = clicked[0]["x"]
-
-    # Optional split view button (still left column)
-    split = st.button("Split affordability chart")
-    if split:
-        affordable_data = sorted_data[sorted_data["affordable"]].sort_values(
-            RATIO_COL, ascending=True
-        )
-        unaffordable_data = sorted_data[~sorted_data["affordable"]].sort_values(
-            RATIO_COL, descending=False
-        )
-
-        st.subheader(f"More affordable cities (ratio ≤ {AFFORDABILITY_THRESHOLD:.1f})")
-        fig_aff = px.bar(
-            affordable_data,
-            x="city_clean",
-            y=RATIO_COL,
-            color="city_afford_label",
-            pattern_shape="user_afford_label",
-            color_discrete_map={
-                "Affordable city (by ratio)": "green",
-                "Expensive city (by ratio)": "red",
-            },
-            pattern_shape_map={
-                "Within your budget": "",
-                "Above your budget": ".",
-            },
-            labels={
-                "city_clean": "City",
-                RATIO_COL: "Price-to-income ratio",
-            },
-            hover_data={
-                "city_clean": True,
-                "Median Sale Price": ":,.0f",
-                "Per Capita Income": ":,.0f",
-                RATIO_COL: ":.2f",
-                "user_afford_label": True,
-            },
-            height=380,
-        )
-        fig_aff.add_hline(
-            y=AFFORDABILITY_THRESHOLD,
-            line_dash="dash",
-            line_color="black",
-        )
-        fig_aff.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig_aff, use_container_width=True)
-
-        st.subheader(f"Less affordable cities (ratio > {AFFORDABILITY_THRESHOLD:.1f})")
-        fig_unaff = px.bar(
-            unaffordable_data,
-            x="city_clean",
-            y=RATIO_COL,
-            color="city_afford_label",
-            pattern_shape="user_afford_label",
-            color_discrete_map={
-                "Affordable city (by ratio)": "green",
-                "Expensive city (by ratio)": "red",
-            },
-            pattern_shape_map={
-                "Within your budget": "",
-                "Above your budget": ".",
-            },
-            labels={
-                "city_clean": "City",
-                RATIO_COL: "Price-to-income ratio",
-            },
-            hover_data={
-                "city_clean": True,
-                "Median Sale Price": ":,.0f",
-                "Per Capita Income": ":,.0f",
-                RATIO_COL: ":.2f",
-                "user_afford_label": True,
-            },
-            height=380,
-        )
-        fig_unaff.add_hline(
-            y=AFFORDABILITY_THRESHOLD,
-            line_dash="dash",
-            line_color="black",
-        )
-        fig_unaff.update_layout(xaxis_tickangle=-45)
-        st.plotly_chart(fig_unaff, use_container_width=True)
+    fig_unaff.update_layout(xaxis_tickangle=-45, bargap=0.1)
+    st.plotly_chart(fig_unaff, use_container_width=True)
 
 
-# ========= RIGHT: ZIP-level map (zoom-in after click) =========
-with main_right:
-    st.subheader("ZIP-code price-to-income map")
+# =====================================================================
+#   SECTION 3 – ZIP-level map for selected city
+# =====================================================================
+st.markdown("### 3. Zoom into ZIP-code details")
 
-    city_clicked = st.session_state.get("selected_city")
+city_clicked = st.session_state.get("selected_city")
 
-    if city_clicked is None:
-        st.info("Click a city bar on the left to see ZIP-level details here.")
+if city_clicked is None:
+    st.info("Click a city bar above to see its ZIP-code price-to-income map here.")
+else:
+    st.markdown(f"#### {city_clicked} – ZIP-level affordability (Price-to-Income)")
+
+    # Load ZIP-level data for the clicked city and selected year
+    df_zip = load_city_zip_data(city_clicked)
+    if "year" in df_zip.columns:
+        df_zip = df_zip[df_zip["year"] == selected_year]
+
+    if df_zip.empty:
+        st.info("No ZIP-level data available for this city/year.")
     else:
-        st.markdown(f"**{city_clicked} – ZIP-level affordability (Price-to-Income)**")
+        # Enrich with lat/lon
+        df_zip_map = get_zip_coordinates(df_zip)
 
-        # Load ZIP-level data for the clicked city and selected year
-        df_zip = load_city_zip_data(city_clicked)
-        if "year" in df_zip.columns:
-            df_zip = df_zip[df_zip["year"] == selected_year]
+        # Detect price and income columns
+        price_col = None
+        income_col = None
 
-        if df_zip.empty:
-            st.info("No ZIP-level data available for this city/year.")
+        if "median_sale_price" in df_zip_map.columns:
+            price_col = "median_sale_price"
+        elif "Median Sale Price" in df_zip_map.columns:
+            price_col = "Median Sale Price"
+
+        if "per_capita_income" in df_zip_map.columns:
+            income_col = "per_capita_income"
+        elif "Per Capita Income" in df_zip_map.columns:
+            income_col = "Per Capita Income"
+
+        if price_col is None or income_col is None:
+            st.error("Sale price or income columns not found in ZIP-level data.")
         else:
-            # Enrich with lat/lon
-            df_zip_map = get_zip_coordinates(df_zip)
+            denom_zip = df_zip_map[income_col].replace(0, np.nan)
+            df_zip_map[RATIO_COL] = df_zip_map[price_col] / denom_zip
+            df_zip_map["ratio_for_map"] = df_zip_map[RATIO_COL].clip(0, MAX_ZIP_RATIO_CLIP)
 
-            # Detect price and income columns
-            price_col = None
-            income_col = None
+            # Layout: left small stats, right map
+            map_col1, map_col2 = st.columns([1, 2])
 
-            if "median_sale_price" in df_zip_map.columns:
-                price_col = "median_sale_price"
-            elif "Median Sale Price" in df_zip_map.columns:
-                price_col = "Median Sale Price"
+            with map_col1:
+                city_row = city_data[city_data["city_clean"] == city_clicked]
+                if not city_row.empty:
+                    row = city_row.iloc[0]
+                    st.markdown(
+                        f"""
+                        **City snapshot – {city_clicked} ({selected_year})**
 
-            if "per_capita_income" in df_zip_map.columns:
-                income_col = "per_capita_income"
-            elif "Per Capita Income" in df_zip_map.columns:
-                income_col = "Per Capita Income"
-
-            if price_col is None or income_col is None:
-                st.error("Sale price or income columns not found in ZIP-level data.")
-            else:
-                denom_zip = df_zip_map[income_col].replace(0, np.nan)
-                df_zip_map[RATIO_COL] = df_zip_map[price_col] / denom_zip
-                df_zip_map["ratio_for_map"] = df_zip_map[RATIO_COL].clip(
-                    0, MAX_ZIP_RATIO_CLIP
+                        - Median sale price: **${row['Median Sale Price']:,.0f}**
+                        - Per-capita income: **${row['Per Capita Income']:,.0f}**
+                        - City price-to-income ratio: **{row[RATIO_COL]:.2f}**
+                        - Dataset affordability: **{"✅ Affordable" if row["affordable"] else "⚠️ Less affordable"}**
+                        """
+                    )
+                st.caption(
+                    "On the right, ZIPs with lower ratios are more affordable relative "
+                    "to local incomes (green), higher ratios are less affordable (red)."
                 )
 
+            with map_col2:
                 # Load city GeoJSON
                 geojson_path = os.path.join(
                     os.path.dirname(__file__),
@@ -355,7 +385,7 @@ with main_right:
                             "lon": df_zip_map["lon"].mean(),
                         },
                         zoom=10,
-                        height=500,
+                        height=520,
                     )
 
                     fig_map.update_layout(
