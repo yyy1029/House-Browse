@@ -20,6 +20,9 @@ st.title("Design 3 – Affordability Finder")
 # For ZIP map clipping
 MAX_ZIP_RATIO_CLIP = 15.0
 
+# User affordability: how many times of user's annual income
+USER_PRICE_MULTIPLIER = 4.0  # e.g. can afford houses up to 4x annual income
+
 
 # ---------- Load data ----------
 @st.cache_data
@@ -59,14 +62,29 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# city_data already has RATIO_COL and "affordable"
-# Build gap_for_plot if you still want it (distance to threshold, signed)
+# City-level affordability (intrinsic, based on city data only)
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
 
 if "city_clean" not in city_data.columns:
     city_data["city_clean"] = city_data["city"]
+
+# ---------- User-level affordability (depends on final_income) ----------
+# Max house price user can afford (simple rule: multiplier * annual income)
+user_max_price = final_income * USER_PRICE_MULTIPLIER
+city_data["user_max_price"] = user_max_price
+
+# User affordability: can the user afford the median house in this city?
+city_data["user_affordable"] = city_data["Median Sale Price"] <= city_data["user_max_price"]
+
+# Labels for plotting
+city_data["city_afford_label"] = np.where(
+    city_data["affordable"], "Affordable city (by ratio)", "Expensive city (by ratio)"
+)
+city_data["user_afford_label"] = np.where(
+    city_data["user_affordable"], "Within your budget", "Above your budget"
+)
 
 # ---------- Sort city-level data ----------
 if sort_option == "Price-to-income ratio":
@@ -78,7 +96,7 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# This is only for profile card display (does not affect P/I ratio)
+# Only for profile card display
 max_rent = final_income * 0.3 / 12.0
 
 
@@ -104,7 +122,8 @@ with main_left:
             <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
             <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
-                City-level affordability uses <em>Median Sale Price / Per Capita Income</em>.
+                City-level affordability uses <em>Median Sale Price / Per Capita Income</em> (lower is better).<br/>
+                Your affordability is compared to <em>{multiplier}× your annual income</em>.
             </p>
         </div>
         """.format(
@@ -112,27 +131,40 @@ with main_left:
             income=int(final_income),
             rent=max_rent,
             year=selected_year,
+            multiplier=USER_PRICE_MULTIPLIER,
         ),
         unsafe_allow_html=True,
     )
 
     st.subheader("Price-to-income ratio by city")
 
+    # Color = city intrinsic affordability, Pattern = user affordability
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
         y=RATIO_COL,
-        color="affordable",
-        color_discrete_map={True: "green", False: "red"},
+        color="city_afford_label",
+        pattern_shape="user_afford_label",
+        color_discrete_map={
+            "Affordable city (by ratio)": "green",
+            "Expensive city (by ratio)": "red",
+        },
+        pattern_shape_map={
+            "Within your budget": "",
+            "Above your budget": ".",
+        },
         labels={
             "city_clean": "City",
             RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+            "city_afford_label": "City-level affordability",
+            "user_afford_label": "Your affordability",
         },
         hover_data={
             "city_clean": True,
             "Median Sale Price": ":,.0f",
             "Per Capita Income": ":,.0f",
             RATIO_COL: ":.2f",
+            "user_afford_label": True,
         },
         height=500,
     )
@@ -150,18 +182,17 @@ with main_left:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # Click interaction: store selected city in session_state
+    # Use plotly_events to both render and capture clicks
     clicked = plotly_events(
         fig_city,
         click_event=True,
-        key="bar_chart_city",
+        hover_event=True,
+        select_event=False,
+        key=f"bar_chart_city_{selected_year}_{sort_option}_{int(final_income)}",
         override_height=500,
     )
     if clicked:
-        # x value is city_clean
         st.session_state.selected_city = clicked[0]["x"]
-
-    st.plotly_chart(fig_city, use_container_width=True)
 
     # Optional split view button (still left column)
     split = st.button("Split affordability chart")
@@ -170,7 +201,7 @@ with main_left:
             RATIO_COL, ascending=True
         )
         unaffordable_data = sorted_data[~sorted_data["affordable"]].sort_values(
-            RATIO_COL, ascending=False
+            RATIO_COL, descending=False
         )
 
         st.subheader(f"More affordable cities (ratio ≤ {AFFORDABILITY_THRESHOLD:.1f})")
@@ -178,8 +209,16 @@ with main_left:
             affordable_data,
             x="city_clean",
             y=RATIO_COL,
-            color="affordable",
-            color_discrete_map={True: "green", False: "red"},
+            color="city_afford_label",
+            pattern_shape="user_afford_label",
+            color_discrete_map={
+                "Affordable city (by ratio)": "green",
+                "Expensive city (by ratio)": "red",
+            },
+            pattern_shape_map={
+                "Within your budget": "",
+                "Above your budget": ".",
+            },
             labels={
                 "city_clean": "City",
                 RATIO_COL: "Price-to-income ratio",
@@ -189,6 +228,7 @@ with main_left:
                 "Median Sale Price": ":,.0f",
                 "Per Capita Income": ":,.0f",
                 RATIO_COL: ":.2f",
+                "user_afford_label": True,
             },
             height=380,
         )
@@ -205,8 +245,16 @@ with main_left:
             unaffordable_data,
             x="city_clean",
             y=RATIO_COL,
-            color="affordable",
-            color_discrete_map={True: "green", False: "red"},
+            color="city_afford_label",
+            pattern_shape="user_afford_label",
+            color_discrete_map={
+                "Affordable city (by ratio)": "green",
+                "Expensive city (by ratio)": "red",
+            },
+            pattern_shape_map={
+                "Within your budget": "",
+                "Above your budget": ".",
+            },
             labels={
                 "city_clean": "City",
                 RATIO_COL: "Price-to-income ratio",
@@ -216,6 +264,7 @@ with main_left:
                 "Median Sale Price": ":,.0f",
                 "Per Capita Income": ":,.0f",
                 RATIO_COL: ":.2f",
+                "user_afford_label": True,
             },
             height=380,
         )
@@ -290,7 +339,7 @@ with main_right:
                         df_zip_map,
                         geojson=zip_geojson,
                         locations="zip_code_int",
-                        featureidkey="properties.ZCTA5CE10",  # adjust if needed
+                        featureidkey="properties.ZCTA5CE10",
                         color="ratio_for_map",
                         color_continuous_scale="RdYlGn_r",
                         range_color=[0, MAX_ZIP_RATIO_CLIP],
@@ -317,9 +366,8 @@ with main_right:
                         ),
                     )
 
-                    # st.plotly_chart(fig_map, use_container_width=True)
                     st.plotly_chart(
                         fig_map,
                         use_container_width=True,
-                        config={"scrollZoom": True},  # enable scroll wheel zoom
+                        config={"scrollZoom": True},
                     )
