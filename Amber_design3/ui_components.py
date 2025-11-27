@@ -64,12 +64,12 @@ def income_control_panel():
     st.sidebar.markdown("---")
     st.sidebar.markdown(
         """
-**30% rule**
+**Price-to-Income rule**
 
-We assume housing is affordable if  
+    We evaluate affordability using:
 
-> monthly rent ≤ 30% of your monthly income.
-"""
-    )
+    > **Rent / Monthly Per-Capita Income**
 
+    Cities with a ratio **≤ 0.30** are considered affordable.
+    """
     return final_income, persona
