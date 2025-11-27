@@ -317,4 +317,9 @@ with main_right:
                         ),
                     )
 
-                    st.plotly_chart(fig_map, use_container_width=True)
+                   st.plotly_chart(
+    fig_map,
+    use_container_width=True,
+    config={"scrollZoom": True}
+)
+
