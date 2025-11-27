@@ -2,11 +2,14 @@
 Data loading and preparation helpers for Design 3 (house price-to-income dataset).
 """
 
+from typing import Optional
+
 import pandas as pd
 import numpy as np
 
 CSV_URL = "https://github.com/yyy1029/House-Browse/releases/download/v1.0/HouseTS.csv"
 
+# Shared with app.py
 RATIO_COL = "price_to_income_ratio"          # city-level price-to-income ratio
 RATIO_COL_ZIP = "price_to_income_ratio_zip"  # zip-level price-to-income ratio
 AFFORDABILITY_THRESHOLD = 5.0                # example threshold for affordability
@@ -54,7 +57,7 @@ def load_data() -> pd.DataFrame:
 def make_city_view_data(
     df: pd.DataFrame,
     annual_income: float,
-    year: int | None = None,
+    year: Optional[int] = None,
     budget_pct: float = 30.0,
 ) -> pd.DataFrame:
     """
@@ -70,7 +73,7 @@ def make_city_view_data(
     if year is None:
         year = int(df["year"].max())
 
-    # This is only used for the UI profile card, not for ratio computation
+    # Only used for UI profile card (max rent), not for ratio computation
     max_rent = annual_income * (budget_pct / 100.0) / 12.0
 
     tmp = df[df["year"] == year].copy()
@@ -134,7 +137,7 @@ def make_zip_view_data(
     df: pd.DataFrame,
     city_name: str,
     annual_income: float,
-    year: int | None = None,
+    year: Optional[int] = None,
     budget_pct: float = 30.0,
 ) -> pd.DataFrame:
     """
