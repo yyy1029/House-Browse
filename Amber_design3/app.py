@@ -166,7 +166,7 @@ fig_city = px.bar(
     },
     labels={
         "city_clean": "City",
-        # RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+        RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
         "afford_label": "Affordability (dataset rule)",
     },
     hover_data={
@@ -189,10 +189,20 @@ fig_city.add_hline(
 
 # Layout tuning for aesthetics
 fig_city.update_layout(
+    yaxis_title=None,
     xaxis_tickangle=-45,
     margin=dict(l=20, r=20, t=40, b=80),
     bargap=0.05,
     bargroupgap=0.0,
+)
+# Add custom annotation at the top of the chart
+fig_city.add_annotation(
+    text="Price-to-income ratio (Median Sale Price / Per Capita Income)",
+    xref="paper", yref="paper",  # Positioning relative to the entire plot area
+    x=0.5, y=1.05,  # Position above the chart
+    showarrow=False,  # No arrow pointing to anything
+    font=dict(size=12, color="black"),
+    align="center",
 )
 
 # Make bars nice and thick
