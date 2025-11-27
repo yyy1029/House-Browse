@@ -72,4 +72,5 @@ def income_control_panel():
 
     Cities with a ratio **≤ 0.30** are considered affordable.
     """
+    )
     return final_income, persona
