@@ -1,3 +1,5 @@
+# app.py
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -80,19 +82,9 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# Calculate max affordable rent based on price-to-income ratio and income
-selected_city = st.session_state.get("selected_city")
+# # profile max rent (for display only)
+# max_rent = final_income * 0.3 / 12.0
 
-if selected_city:
-    selected_city_data = city_data[city_data["city_clean"] == selected_city]
-
-    if not selected_city_data.empty:
-        # Calculate max affordable rent based on price-to-income ratio
-        max_affordable_rent = selected_city_data[RATIO_COL].values[0] * final_income / 12
-    else:
-        st.error(f"未找到 {selected_city} 的数据.")
-else:
-    st.warning("请选择一个城市来计算最大可负担租金。")
 
 # =====================================================================
 #   SECTION 1 – Profile + dataset summary
@@ -115,7 +107,7 @@ with sec1_col1:
             <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
             <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
-            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
+            # <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
             <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
                 City affordability here uses
@@ -126,7 +118,7 @@ with sec1_col1:
         """.format(
             persona=persona,
             income=int(final_income),
-            rent=max_affordable_rent,
+            rent=max_rent,
             year=selected_year,
         ),
         unsafe_allow_html=True,
