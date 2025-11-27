@@ -34,6 +34,7 @@ def get_data():
     st.cache_data.clear()  
     
     return load_data()
+df = get_data()
 
 
 # ---------- Sidebar: persona + income ----------
