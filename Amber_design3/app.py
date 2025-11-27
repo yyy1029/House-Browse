@@ -85,7 +85,6 @@ max_rent = final_income * 0.3 / 12.0
 main_left, main_right = st.columns([1.1, 1.6])
 
 # ========= LEFT: profile + city bar chart =========
-# ========= LEFT: profile + city bar chart =========
 with main_left:
     # Profile card
     st.markdown(
@@ -118,7 +117,6 @@ with main_left:
 
     st.subheader("Price-to-income ratio by city")
 
-    # 1. 创建你要的那张图
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
@@ -151,20 +149,20 @@ with main_left:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # 2. 用 plotly_events 渲染“唯一的一张图”并捕获点击
+    # Click interaction: store selected city in session_state
     clicked = plotly_events(
         fig_city,
         click_event=True,
-        hover_event=True,
-        select_event=False,
         key="bar_chart_city",
         override_height=500,
     )
     if clicked:
-        # x = city_clean
+        # x value is city_clean
         st.session_state.selected_city = clicked[0]["x"]
 
-    # 3. Split 按钮 & 子图（这些没交互，正常 st.plotly_chart 就行）
+    st.plotly_chart(fig_city, use_container_width=True)
+
+    # Optional split view button (still left column)
     split = st.button("Split affordability chart")
     if split:
         affordable_data = sorted_data[sorted_data["affordable"]].sort_values(
@@ -181,7 +179,10 @@ with main_left:
             y=RATIO_COL,
             color="affordable",
             color_discrete_map={True: "green", False: "red"},
-            labels={"city_clean": "City", RATIO_COL: "Price-to-income ratio"},
+            labels={
+                "city_clean": "City",
+                RATIO_COL: "Price-to-income ratio",
+            },
             hover_data={
                 "city_clean": True,
                 "Median Sale Price": ":,.0f",
@@ -205,7 +206,10 @@ with main_left:
             y=RATIO_COL,
             color="affordable",
             color_discrete_map={True: "green", False: "red"},
-            labels={"city_clean": "City", RATIO_COL: "Price-to-income ratio"},
+            labels={
+                "city_clean": "City",
+                RATIO_COL: "Price-to-income ratio",
+            },
             hover_data={
                 "city_clean": True,
                 "Median Sale Price": ":,.0f",
@@ -221,6 +225,7 @@ with main_left:
         )
         fig_unaff.update_layout(xaxis_tickangle=-45)
         st.plotly_chart(fig_unaff, use_container_width=True)
+
 
 # ========= RIGHT: ZIP-level map (zoom-in after click) =========
 with main_right:
@@ -314,5 +319,5 @@ with main_right:
                     st.plotly_chart(
                         fig_map,
                         use_container_width=True,
-                        config={"scrollZoom": True},
+                        config={"scrollZoom": True},  # enable scroll wheel zoom
                     )
