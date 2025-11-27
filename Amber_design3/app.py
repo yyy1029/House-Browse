@@ -59,13 +59,19 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# Build gap_for_plot (distance to threshold, signed)
+# gap_for_plot: distance to threshold (signed，不直接画图用了，但保留)
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
 
+# clean city name
 if "city_clean" not in city_data.columns:
     city_data["city_clean"] = city_data["city"]
+
+# string label for coloring
+city_data["afford_label"] = np.where(
+    city_data["affordable"], "Affordable", "Unaffordable"
+)
 
 # ---------- Sort city-level data ----------
 if sort_option == "Price-to-income ratio":
@@ -117,16 +123,24 @@ with main_left:
 
     st.subheader("Price-to-income ratio by city")
 
-    # 主图：和你同学的一样写法
+    # Make sure sorted_data has afford_label (排序后列还在，这里只是保险再设一次也没事)
+    sorted_data["afford_label"] = np.where(
+        sorted_data["affordable"], "Affordable", "Unaffordable"
+    )
+
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
         y=RATIO_COL,
-        color="affordable",
-        color_discrete_map={True: "green", False: "red"},
+        color="afford_label",
+        color_discrete_map={
+            "Affordable": "green",
+            "Unaffordable": "red",
+        },
         labels={
             "city_clean": "City",
             RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+            "afford_label": "Affordability",
         },
         hover_data={
             "city_clean": True,
@@ -137,12 +151,20 @@ with main_left:
         height=500,
     )
 
+    fig_city.add_hline(
+        y=AFFORDABILITY_THRESHOLD,
+        line_dash="dash",
+        line_color="black",
+        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
+        annotation_position="top left",
+    )
+
     fig_city.update_layout(
         xaxis_tickangle=-45,
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # 只用 plotly_events 来“画 + 监听”
+    # 只用 plotly_events 来显示 + 监听（不再额外 st.plotly_chart 一次）
     clicked = plotly_events(
         fig_city,
         click_event=True,
@@ -152,26 +174,30 @@ with main_left:
     if clicked:
         st.session_state.selected_city = clicked[0]["x"]
 
-    # Optional split view button (still left column)
+    # ---------- Split view (optional) ----------
     split = st.button("Split affordability chart")
     if split:
-        affordable_data = sorted_data[sorted_data["affordable"]].sort_values(
-            RATIO_COL, ascending=True
-        )
-        unaffordable_data = sorted_data[~sorted_data["affordable"]].sort_values(
-            RATIO_COL, ascending=False
-        )
+        # 用数值条件再切一次，避免可能的布尔逻辑混乱
+        affordable_data = sorted_data[sorted_data[RATIO_COL] <= AFFORDABILITY_THRESHOLD].copy()
+        unaffordable_data = sorted_data[sorted_data[RATIO_COL] > AFFORDABILITY_THRESHOLD].copy()
+
+        affordable_data["afford_label"] = "Affordable"
+        unaffordable_data["afford_label"] = "Unaffordable"
 
         st.subheader(f"More affordable cities (ratio ≤ {AFFORDABILITY_THRESHOLD:.1f})")
         fig_aff = px.bar(
             affordable_data,
             x="city_clean",
             y=RATIO_COL,
-            color="affordable",
-            color_discrete_map={True: "green", False: "red"},
+            color="afford_label",
+            color_discrete_map={
+                "Affordable": "green",
+                "Unaffordable": "red",
+            },
             labels={
                 "city_clean": "City",
                 RATIO_COL: "Price-to-income ratio",
+                "afford_label": "Affordability",
             },
             hover_data={
                 "city_clean": True,
@@ -194,11 +220,15 @@ with main_left:
             unaffordable_data,
             x="city_clean",
             y=RATIO_COL,
-            color="affordable",
-            color_discrete_map={True: "green", False: "red"},
+            color="afford_label",
+            color_discrete_map={
+                "Affordable": "green",
+                "Unaffordable": "red",
+            },
             labels={
                 "city_clean": "City",
                 RATIO_COL: "Price-to-income ratio",
+                "afford_label": "Affordability",
             },
             hover_data={
                 "city_clean": True,
