@@ -9,10 +9,10 @@ import numpy as np
 # CSV_PATH = "HouseTS.csv"（if you want to download the csv on your desktop)
 CSV_URL = "https://github.com/yyy1029/House-Browse/releases/download/v1.0/HouseTS.csv"
 
-# 统一的比值列名 & 阈值（和 app 里保持一致）
-RATIO_COL = "price_to_income_ratio"        # 城市级：rent / income
+
+RATIO_COL = "price_to_income_ratio"        
 RATIO_COL_ZIP = "price_to_income_ratio_zip"
-AFFORDABILITY_THRESHOLD = 0.30            # 30% 收入用于租金作为“边界线”
+AFFORDABILITY_THRESHOLD = 0.30           
 
 
 def load_data() -> pd.DataFrame:
@@ -23,7 +23,6 @@ def load_data() -> pd.DataFrame:
 
     df["date"] = pd.to_datetime(df["date"])
     df["city_clean"] = df["city"]
-    # 基于人均年收入得到月收入
     df["monthly_income_pc"] = df["Per Capita Income"] / 12.0
 
     return df
@@ -51,7 +50,6 @@ def make_city_view_data(
     if year is None:
         year = int(df["year"].max())
 
-    # 用户层面的“30% 规则”仍然保留，只用于展示（Profile 卡片）
     max_rent = annual_income * (budget_pct / 100.0) / 12.0
 
     tmp = df[df["year"] == year].copy()
@@ -72,14 +70,14 @@ def make_city_view_data(
     # city-level monthly income
     city_agg["monthly_income_city"] = city_agg["Per Capita Income"] / 12.0
 
-    # 真正的 price-to-income（这里是 rent-to-income）：月租 / 月人均收入
+  
     denom = city_agg["monthly_income_city"].replace(0, np.nan)
     city_agg[RATIO_COL] = city_agg["Median Rent"] / denom
 
-    # 基于 ratio 的可负担判断：比例越低越可负担
+  
     city_agg["affordable"] = city_agg[RATIO_COL] <= AFFORDABILITY_THRESHOLD
 
-    # 保留与用户收入相关的字段，方便前端展示或后续扩展
+    
     city_agg["user_max_rent"] = max_rent
     city_agg["budget_pct"] = budget_pct
     city_agg["year"] = year
@@ -126,7 +124,7 @@ def make_zip_view_data(
     """
     Zip-level view inside a city for a given income & year.
 
-    返回每个 ZIP 的：
+
     - Median Rent
     - Per Capita Income
     - price_to_income_ratio_zip  (rent / per-capita monthly income)
@@ -150,12 +148,11 @@ def make_zip_view_data(
         )
     )
 
-    # ZIP 级月收入
     zip_agg["monthly_income_zip"] = zip_agg["Per Capita Income"] / 12.0
     denom = zip_agg["monthly_income_zip"].replace(0, np.nan)
     zip_agg[RATIO_COL_ZIP] = zip_agg["Median Rent"] / denom
 
-    # 基于 price-to-income 的可负担判断
+   
     zip_agg["affordable"] = zip_agg[RATIO_COL_ZIP] <= AFFORDABILITY_THRESHOLD
 
     return zip_agg.sort_values("Median Rent")
