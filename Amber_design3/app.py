@@ -194,7 +194,7 @@ fig_city.update_layout(
     yaxis_title=None,
     xaxis_tickangle=-45,
     margin=dict(l=20, r=20, t=40, b=80),
-    bargap=0.05,
+    bargap=0.01,
     bargroupgap=0.0,
 )
 # Add custom annotation at the top of the chart
