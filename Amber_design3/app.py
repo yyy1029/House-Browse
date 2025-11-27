@@ -166,7 +166,7 @@ fig_city = px.bar(
     },
     labels={
         "city_clean": "City",
-        RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
+        # RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
         "afford_label": "Affordability (dataset rule)",
     },
     hover_data={
