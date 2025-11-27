@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import json  
-from streamlit_plotly_events import plotly_events
 from zip_module import load_city_zip_data, get_zip_coordinates
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
@@ -22,6 +21,11 @@ st.title("Design 3 – Affordability Finder")
 
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
+# # —— 侧边栏城市选择 ——（插入）
+# with st.sidebar:
+#     cities = sorted(df["city"].unique())
+#     selected_city = st.selectbox("Select a city", cities, index=0, key="city_main")
+
 # ========== 年份选择器（上移到此） ==========
 def year_selector(df: pd.DataFrame, key: str):
     years = sorted(df["year"].unique())
@@ -36,6 +40,59 @@ with top_col2:
         ["City name", "Affordability gap", "Median rent", "Per capita income"],
         key="sort_main",
     )
+# —— 城市选择器：现在放在 Year + Sort 下方 —— 
+cities = sorted(df["city"].unique())
+selected_city = st.selectbox(
+    "Select a city",
+    options=cities,
+    index=cities.index(cities[0]),
+    key="city_main",
+)
+
+# ========== ZIP 数据（现在 selected_year 已经有了） ==========
+df_zip = load_city_zip_data(selected_city)
+if "year" in df_zip.columns:
+    df_zip = df_zip[df_zip["year"] == selected_year]
+
+# ② 补经纬度 + 计算比率
+df_zip_map = get_zip_coordinates(df_zip)
+
+# ③ 读城市 GeoJSON（推荐用你已有的 city_geojson）
+import os, json
+
+# 自动拼接完整路径，兼容本地 + 云端
+geojson_path = os.path.join(os.path.dirname(__file__), "city_geojson", f"{selected_city}.geojson")
+
+if not os.path.exists(geojson_path):
+    st.error(f"❌ GeoJSON file not found: {geojson_path}")
+    st.stop()
+
+with open(geojson_path, "r") as f:
+    zip_geojson = json.load(f)
+
+
+# ④ 画图（用你现有的 Plotly 逻辑）
+fig_map = px.choropleth_mapbox(
+    df_zip_map,
+    geojson=zip_geojson,
+    locations="zip_code_int",
+    featureidkey="properties.ZCTA5CE10",  # 若不匹配，改成你的 geojson 属性字段
+    color="affordability_norm",
+    color_continuous_scale=[
+        [0.0, "red"],
+        [0.5, "yellow"],
+        [1.0, "green"],
+    ],
+    range_color=[0, 1],
+    hover_name="zip_code_str",
+    hover_data={"median_rent": True, "monthly_income": True, "affordability_ratio": ":.2f"},
+    mapbox_style="carto-positron",
+    center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
+    zoom=10,
+    height=600
+)
+st.plotly_chart(fig_map, use_container_width=True)
+
 
 # ---------- Prepare city-level data ----------
 city_data = make_city_view_data(
@@ -119,30 +176,6 @@ with col2:
     )
 
     st.plotly_chart(fig, use_container_width=True)
-# —— 捕获点击：点哪根柱子，就选哪个城市 —— 
-clicked = plotly_events(
-    fig,
-    click_event=True,
-    hover_event=False,
-    select_event=False,
-    key="city_bar_click",
-)
-
-# —— 主区域的城市选择器（兜底 & 可手动切换）——
-cities_main = sorted(sorted_data["city_clean"].unique())
-
-# 默认城市：有点击就用点击；否则沿用上次会话；再不行就用第一项
-_default = st.session_state.get("selected_city", cities_main[0])
-if clicked:
-    _default = clicked[0].get("x", _default)
-
-selected_city = st.selectbox(
-    "Select a city",
-    options=cities_main,
-    index=cities_main.index(_default) if _default in cities_main else 0,
-    key="city_main_top",
-)
-st.session_state["selected_city"] = selected_city
 
 
 # ------------ Split ------------
@@ -195,47 +228,3 @@ if split:
     )
     fig_unaff.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_unaff, use_container_width=True)
-
-# ========== ZIP 数据（现在 selected_year 已经有了） ==========
-df_zip = load_city_zip_data(selected_city)
-if "year" in df_zip.columns:
-    df_zip = df_zip[df_zip["year"] == selected_year]
-
-# ② 补经纬度 + 计算比率
-df_zip_map = get_zip_coordinates(df_zip)
-
-# ③ 读城市 GeoJSON（推荐用你已有的 city_geojson）
-import os, json
-
-# 自动拼接完整路径，兼容本地 + 云端
-geojson_path = os.path.join(os.path.dirname(__file__), "city_geojson", f"{selected_city}.geojson")
-
-if not os.path.exists(geojson_path):
-    st.error(f"❌ GeoJSON file not found: {geojson_path}")
-    st.stop()
-
-with open(geojson_path, "r") as f:
-    zip_geojson = json.load(f)
-
-
-# ④ 画图（用你现有的 Plotly 逻辑）
-fig_map = px.choropleth_mapbox(
-    df_zip_map,
-    geojson=zip_geojson,
-    locations="zip_code_int",
-    featureidkey="properties.ZCTA5CE10",  # 若不匹配，改成你的 geojson 属性字段
-    color="affordability_norm",
-    color_continuous_scale=[
-        [0.0, "red"],
-        [0.5, "yellow"],
-        [1.0, "green"],
-    ],
-    range_color=[0, 1],
-    hover_name="zip_code_str",
-    hover_data={"median_rent": True, "monthly_income": True, "affordability_ratio": ":.2f"},
-    mapbox_style="carto-positron",
-    center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
-    zoom=10,
-    height=600
-)
-st.plotly_chart(fig_map, use_container_width=True)
