@@ -1,85 +1,98 @@
+# dataprep.py
+"""
+Data loading and preparation helpers for Design 3 (HouseTS dataset).
+"""
+
 import pandas as pd
 import numpy as np
 
+# CSV_PATH = "HouseTS.csv"（if you want to download the csv on your desktop)
 CSV_URL = "https://github.com/yyy1029/House-Browse/releases/download/v1.0/HouseTS.csv"
-
 
 def load_data() -> pd.DataFrame:
     """
     Load HouseTS.csv from GitHub Releases and compute key derived fields.
     """
     df = pd.read_csv(CSV_URL)
-
+    
     df["date"] = pd.to_datetime(df["date"])
     df["city_clean"] = df["city"]
-
-    if "Per Capita Income" in df.columns:
-        df["monthly_income_pc"] = df["Per Capita Income"] / 12.0
+    df["monthly_income_pc"] = df["Per Capita Income"] / 12.0
 
     return df
+
 
 def make_city_view_data(
     df: pd.DataFrame,
     annual_income: float,
     year: int | None = None,
-    threshold: float | None = None,
+    budget_pct: float = 30.0,
 ) -> pd.DataFrame:
     """
-    Calculate price-to-income ratio at the city level, and affordability.
+    Aggregate data to city level for a given income, year and housing budget %.
+
+    Returns one row per city with at least:
+    - city_clean
+    - Median Rent
+    - Per Capita Income
+    - Total Population
+    - monthly_income_city
+    - afford_ratio_dyn   (rent / max_rent under current rule)
+    - afford_gap         (afford_ratio_dyn - 1, >0 = unaffordable)
+    - affordable         (True / False)
+    - year, user_income, user_max_rent, budget_pct
     """
     if year is None:
         year = int(df["year"].max())
 
+    # housing budget rule: max affordable monthly rent
+    max_rent = annual_income * (budget_pct / 100.0) / 12.0
+
     tmp = df[df["year"] == year].copy()
 
+    # aggregate by city 
     city_agg = (
         tmp.groupby("city", as_index=False)
         .agg(
             {
                 "Median Rent": "median",
                 "Per Capita Income": "median",
-                "median_sale_price": "median",  # Sale price used for price-to-income ratio
                 "Total Population": "sum",
             }
         )
         .rename(columns={"city": "city_clean"})
     )
 
-    # Monthly income of the city
+    # city-level monthly income
     city_agg["monthly_income_city"] = city_agg["Per Capita Income"] / 12.0
 
-    # Calculate price-to-income ratio
-    city_agg["price_to_income"] = (
-        city_agg["median_sale_price"] / city_agg["Per Capita Income"]
-    )
+    # 动态 affordability ratio & gap
+    city_agg["user_max_rent"] = max_rent
+    city_agg["afford_ratio_dyn"] = city_agg["Median Rent"] / max_rent
+    city_agg["afford_gap"] = city_agg["afford_ratio_dyn"] - 1.0  # >0 = unaffordable
 
-    # Set default threshold if not provided (using median of price-to-income ratio)
-    if threshold is None:
-        threshold = city_agg["price_to_income"].median()
+    city_agg["affordable"] = city_agg["afford_ratio_dyn"] <= 1.0
 
-    # Calculate affordability gap (below threshold is affordable)
-    city_agg["afford_gap"] = threshold - city_agg["price_to_income"]
-    city_agg["affordable"] = city_agg["afford_gap"] >= 0  # affordable if gap >= 0
-
-    # Adding additional details
-    city_agg["budget_pct"] = 30.0  # Housing budget percentage (not directly used in price-to-income)
+    city_agg["budget_pct"] = budget_pct
     city_agg["year"] = year
     city_agg["user_income"] = annual_income
 
     return city_agg.sort_values("city_clean").reset_index(drop=True)
 
+
 def make_city_history(df: pd.DataFrame, city_name: str) -> pd.DataFrame:
     """
     For a selected city, return year-level history (optional drill-down):
+
     - Median Rent
     - Per Capita Income
-    - Price-to-Income ratio
+    - afford_ratio_30 (fixed 30% rule)
     """
     tmp = df[df["city"] == city_name].copy()
 
     tmp["monthly_income_city"] = tmp["Per Capita Income"] / 12.0
     tmp["max_rent_30"] = tmp["monthly_income_city"] * 0.3
-    tmp["price_to_income"] = tmp["median_sale_price"] / tmp["Per Capita Income"]
+    tmp["afford_ratio_30"] = tmp["Median Rent"] / tmp["max_rent_30"]
 
     hist = (
         tmp.groupby("year", as_index=False)
@@ -87,28 +100,31 @@ def make_city_history(df: pd.DataFrame, city_name: str) -> pd.DataFrame:
             {
                 "Median Rent": "median",
                 "Per Capita Income": "median",
-                "price_to_income": "median",
+                "afford_ratio_30": "median",
             }
         )
         .sort_values("year")
     )
     return hist
 
+
 def make_zip_view_data(
     df: pd.DataFrame,
     city_name: str,
     annual_income: float,
     year: int | None = None,
-    threshold: float | None = None,
+    budget_pct: float = 30.0,
 ) -> pd.DataFrame:
     """
-    Zip-level view inside a city using price-to-income ratio:
-    - price_to_income_zip = median_sale_price / Per Capita Income
+    Zip-level view inside a city for a given income & year.
     """
     if year is None:
         year = int(df["year"].max())
 
+    max_rent = annual_income * (budget_pct / 100.0) / 12.0
+
     tmp = df[(df["city"] == city_name) & (df["year"] == year)].copy()
+
     if tmp.empty:
         return tmp
 
@@ -116,22 +132,14 @@ def make_zip_view_data(
         tmp.groupby("zipcode", as_index=False)
         .agg(
             {
-                "median_sale_price": "median",  # Median sale price for price-to-income ratio
-                "Per Capita Income": "median",  # Median per capita income
+                "Median Rent": "median",
+                "Per Capita Income": "median",
             }
         )
     )
+    zip_agg["user_max_rent"] = max_rent
+    zip_agg["afford_ratio_zip"] = zip_agg["Median Rent"] / max_rent
+    zip_agg["afford_gap_zip"] = zip_agg["afford_ratio_zip"] - 1.0
+    zip_agg["affordable"] = zip_agg["afford_ratio_zip"] <= 1.0
 
-    zip_agg["price_to_income_zip"] = (
-        zip_agg["median_sale_price"] / zip_agg["Per Capita Income"]
-    )
-
-    # Set threshold if not provided
-    if threshold is None:
-        threshold = zip_agg["price_to_income_zip"].median()
-
-    # Calculate affordability gap (price-to-income ratio)
-    zip_agg["afford_gap_zip"] = threshold - zip_agg["price_to_income_zip"]
-    zip_agg["affordable"] = zip_agg["afford_gap_zip"] >= 0  # affordable if gap >= 0
-
-    return zip_agg.sort_values("median_sale_price")
+    return zip_agg.sort_values("Median Rent")
