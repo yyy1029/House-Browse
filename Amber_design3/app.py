@@ -223,6 +223,7 @@ clicked = plotly_events(
 )
 
 if clicked:
+    st.cache_data.clear()
     st.session_state.selected_city = clicked[0]["x"]
 
 
