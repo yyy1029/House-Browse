@@ -59,8 +59,7 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# city_data already has RATIO_COL and "affordable"
-# Build gap_for_plot if you still want it (distance to threshold, signed)
+# Build gap_for_plot (distance to threshold, signed)
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
@@ -78,7 +77,7 @@ elif sort_option == "Per capita income":
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
-# This is only for profile card display (does not affect P/I ratio)
+# Only for profile card display
 max_rent = final_income * 0.3 / 12.0
 
 
@@ -317,7 +316,8 @@ with main_right:
                         ),
                     )
 
-                   st.plotly_chart(fig_map, use_container_width=True, config={"scrollZoom": True})
-
-
-
+                    st.plotly_chart(
+                        fig_map,
+                        use_container_width=True,
+                        config={"scrollZoom": True},  # enable scroll wheel zoom
+                    )
