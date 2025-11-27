@@ -29,13 +29,13 @@ MAX_ZIP_RATIO_CLIP = 15.0
 
 
 # ---------- Load data ----------
-@st.cache_data
+# @st.cache_data
+st.cache_data.clear()
 def get_data():
-    st.cache_data.clear()  
-    
     return load_data()
-df = get_data()
 
+
+df = get_data()
 
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
@@ -224,7 +224,6 @@ clicked = plotly_events(
 )
 
 if clicked:
-    st.cache_data.clear()
     st.session_state.selected_city = clicked[0]["x"]
 
 
