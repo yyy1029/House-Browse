@@ -117,25 +117,16 @@ with main_left:
 
     st.subheader("Price-to-income ratio by city")
 
-    # 1. 先加一个字符串列，用来做颜色映射（比直接用 bool 稳）
-    sorted_data["afford_label"] = np.where(
-        sorted_data["affordable"], "Affordable", "Unaffordable"
-    )
-
-    # 2. 主图：用 afford_label 做颜色
+    # 主图：和你同学的一样写法
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
         y=RATIO_COL,
-        color="afford_label",
-        color_discrete_map={
-            "Affordable": "green",
-            "Unaffordable": "red",
-        },
+        color="affordable",
+        color_discrete_map={True: "green", False: "red"},
         labels={
             "city_clean": "City",
             RATIO_COL: "Price-to-income ratio (Median Sale Price / Per Capita Income)",
-            "afford_label": "Affordability",
         },
         hover_data={
             "city_clean": True,
@@ -146,32 +137,20 @@ with main_left:
         height=500,
     )
 
-    fig_city.add_hline(
-        y=AFFORDABILITY_THRESHOLD,
-        line_dash="dash",
-        line_color="black",
-        annotation_text=f"Threshold = {AFFORDABILITY_THRESHOLD:.1f}",
-        annotation_position="top left",
-    )
-
     fig_city.update_layout(
         xaxis_tickangle=-45,
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # 3. 用 plotly_events 渲染“唯一一张主图” + 捕获点击
+    # 只用 plotly_events 来“画 + 监听”
     clicked = plotly_events(
         fig_city,
         click_event=True,
-        hover_event=True,
-        select_event=False,
-        key=f"bar_chart_city_{selected_year}_{sort_option}",  # 年份/排序变就强制刷新
+        key=f"bar_chart_{selected_year}_{sort_option}",  # key 跟着控件变化，强制刷新
         override_height=500,
     )
     if clicked:
-        # x 对应 city_clean
         st.session_state.selected_city = clicked[0]["x"]
-
 
     # Optional split view button (still left column)
     split = st.button("Split affordability chart")
