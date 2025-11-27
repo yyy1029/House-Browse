@@ -149,18 +149,33 @@ with main_left:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # Click interaction: store selected city in session_state
+    # # Click interaction: store selected city in session_state
+    # clicked = plotly_events(
+    #     fig_city,
+    #     click_event=True,
+    #     key="bar_chart_city",
+    #     override_height=500,
+    # )
+    # if clicked:
+    #     # x value is city_clean
+    #     st.session_state.selected_city = clicked[0]["x"]
+
+    # st.plotly_chart(fig_city, use_container_width=True)
+    # Click interaction: render chart + store selected city in session_state
     clicked = plotly_events(
         fig_city,
         click_event=True,
-        key="bar_chart_city",
+        hover_event=True,
+        select_event=False,
+        # 关键！！！让 key 随 year 和 sort 改变，强制组件刷新
+        key=f"bar_chart_city_{selected_year}_{sort_option}",
         override_height=500,
     )
     if clicked:
         # x value is city_clean
         st.session_state.selected_city = clicked[0]["x"]
 
-    st.plotly_chart(fig_city, use_container_width=True)
+
 
     # Optional split view button (still left column)
     split = st.button("Split affordability chart")
