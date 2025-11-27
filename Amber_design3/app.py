@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -83,9 +81,18 @@ else:  # City name
     sorted_data = city_data.sort_values("city_clean")
 
 # Calculate max affordable rent based on price-to-income ratio and income
-max_affordable_rent = selected_city_data[RATIO_COL] * final_income / 12
+selected_city = st.session_state.get("selected_city")
 
+if selected_city:
+    selected_city_data = city_data[city_data["city_clean"] == selected_city]
 
+    if not selected_city_data.empty:
+        # Calculate max affordable rent based on price-to-income ratio
+        max_affordable_rent = selected_city_data[RATIO_COL].values[0] * final_income / 12
+    else:
+        st.error(f"未找到 {selected_city} 的数据.")
+else:
+    st.warning("请选择一个城市来计算最大可负担租金。")
 
 # =====================================================================
 #   SECTION 1 – Profile + dataset summary
@@ -119,7 +126,7 @@ with sec1_col1:
         """.format(
             persona=persona,
             income=int(final_income),
-            rent=max_rent,
+            rent=max_affordable_rent,
             year=selected_year,
         ),
         unsafe_allow_html=True,
