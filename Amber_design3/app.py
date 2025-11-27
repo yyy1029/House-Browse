@@ -59,7 +59,7 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# Build gap_for_plot (distance to threshold, signed)
+# gap_for_plot (signed distance to threshold, if you later need it)
 gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
 dist = gap.abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], dist, -dist)
@@ -117,7 +117,7 @@ with main_left:
 
     st.subheader("Price-to-income ratio by city")
 
-    # ---- build the figure (样子和你要的那张一样) ----
+    # ---- Build the "nice-looking" figure ----
     fig_city = px.bar(
         sorted_data,
         x="city_clean",
@@ -150,20 +150,23 @@ with main_left:
         margin=dict(l=20, r=20, t=40, b=80),
     )
 
-    # ---- 用 plotly_events 来“画图 + 捕捉点击”，不再额外 st.plotly_chart ----
+    # 1) 正常展示这张图（就是你想要的那一张）
+    st.plotly_chart(fig_city, use_container_width=True)
+
+    # 2) 用一个“隐藏版”的 plotly_events 来捕获点击（高度设得很小，不影响布局）
     clicked = plotly_events(
         fig_city,
         click_event=True,
         hover_event=False,
         select_event=False,
-        key="bar_chart_city",
-        override_height=500,
+        key="bar_chart_city_events",
+        override_height=1,   # 几乎看不见
     )
     if clicked:
         # x value is city_clean
         st.session_state.selected_city = clicked[0]["x"]
 
-    # Split chart button（保持不变）
+    # Split chart button
     split = st.button("Split affordability chart")
     if split:
         affordable_data = sorted_data[sorted_data["affordable"]].sort_values(
