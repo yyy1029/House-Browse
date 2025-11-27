@@ -107,8 +107,7 @@ with sec1_col1:
             <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
             <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
-            <p style="margin:0.1rem 0;"><strong>Housing budget (rent rule):</strong> 30% of income (for reference)</p>
-            <p style="margin:0.1rem 0;"><strong>Max rent under 30%:</strong> ≈ ${rent:,.0f} / month</p>
+            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
             <p style="margin:0.1rem 0;font-size:0.9rem;color:#555;">
                 City affordability here uses
