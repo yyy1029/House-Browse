@@ -108,7 +108,7 @@ city_data = make_city_view_data(
     df,
     annual_income=final_income,   # 现在不直接参与 ratio，只保留做 profile 用
     year=selected_year,
-    budget_pct=30,
+    # budget_pct=30,
 )
 
 # 这里假设 dataprep.py 中已经生成：
