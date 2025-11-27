@@ -1,12 +1,9 @@
-# app.py
 import os
 import json
-
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-
 from zip_module import load_city_zip_data, get_zip_coordinates
 from dataprep import load_data, make_city_view_data
 from ui_components import income_control_panel
@@ -21,16 +18,13 @@ df = get_data()
 
 st.title("Design 3 – Price Affordability Finder")
 
-
 # ---------- Sidebar: persona + income ----------
 final_income, persona = income_control_panel()
-
 
 # ---------- Year selector ----------
 def year_selector(df: pd.DataFrame, key: str):
     years = sorted(df["year"].unique())
     return st.selectbox("Year", years, index=len(years) - 1, key=key)
-
 
 top_col1, top_col2 = st.columns([1, 2])
 with top_col1:
@@ -102,7 +96,6 @@ fig_map = px.choropleth_mapbox(
 fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0))
 st.plotly_chart(fig_map, use_container_width=True)
 
-
 # ---------- Prepare city-level data (price-to-income version) ----------
 city_data = make_city_view_data(
     df,
@@ -128,7 +121,6 @@ elif sort_option == "Per capita income":
     sorted_data = city_data.sort_values("Per Capita Income", ascending=False)
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
-
 
 # ---------- Layout: left profile card + main right ----------
 col1, col2 = st.columns([1, 2])
@@ -166,7 +158,7 @@ with col2:
     fig = px.bar(
         sorted_data,
         x="city_clean",
-        y="gap_for_plot",
+        y="gap_for_plot",  # This now uses price_to_income_gap
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
         labels={
@@ -190,7 +182,6 @@ with col2:
 
     st.plotly_chart(fig, use_container_width=True)
 
-
 # ------------ Split ------------
 split = st.button("Split price-to-income chart")
 
@@ -202,7 +193,7 @@ if split:
     fig_aff = px.bar(
         affordable_data,
         x="city_clean",
-        y="gap_for_plot",
+        y="gap_for_plot",  # This uses price_to_income_gap
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
         labels={"city_clean": "City", "gap_for_plot": "Distance from median price-to-income"},
@@ -221,7 +212,7 @@ if split:
     fig_unaff = px.bar(
         unaffordable_data,
         x="city_clean",
-        y="gap_for_plot",
+        y="gap_for_plot",  # This uses price_to_income_gap
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
         labels={"city_clean": "City", "gap_for_plot": "Distance from median price-to-income"},
@@ -231,7 +222,4 @@ if split:
             "Per Capita Income": ":,.0f",
             "price_to_income": ":.2f",
         },
-        height=380,
-    )
-    fig_unaff.update_layout(xaxis_tickangle=-45)
-    st.plotly_chart(fig_unaff, use_container_width=True)
+       
