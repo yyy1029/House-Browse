@@ -19,7 +19,7 @@ def get_data():
 
 df = get_data()
 
-st.title("Design 3 – Affordability Finder")
+st.title("Design 3 – Price Affordability Finder")
 
 
 # ---------- Sidebar: persona + income ----------
@@ -57,7 +57,7 @@ selected_city = st.selectbox(
     key="city_main",
 )
 
-# ---------- ZIP-level data & map ----------
+# ---------- ZIP-level data & map (price-to-income version) ----------
 df_zip = load_city_zip_data(selected_city)
 if "year" in df_zip.columns:
     df_zip = df_zip[df_zip["year"] == selected_year]
@@ -75,7 +75,7 @@ if not os.path.exists(geojson_path):
 with open(geojson_path, "r") as f:
     zip_geojson = json.load(f)
 
-# Choropleth map：现在颜色用 zip_module 里算好的 affordability_norm（仍然是租金比率）
+# Choropleth map：颜色基于 price_to_income_zip 归一化后的 affordability_norm
 fig_map = px.choropleth_mapbox(
     df_zip_map,
     geojson=zip_geojson,
@@ -83,21 +83,21 @@ fig_map = px.choropleth_mapbox(
     featureidkey="properties.ZCTA5CE10",
     color="affordability_norm",
     color_continuous_scale=[
-        [0.0, "green"],
+        [0.0, "green"],   # 更便宜（price-to-income 低）
         [0.5, "yellow"],
-        [1.0, "red"],
+        [1.0, "red"],     # 更贵（price-to-income 高）
     ],
     range_color=[0, 1],
     hover_name="zip_code_str",
     hover_data={
-        "median_rent": ":,.0f",
+        "median_sale_price": ":,.0f",
         "per_capita_income": ":,.0f",
-        "affordability_ratio": ":.2f",
+        "price_to_income_zip": ":.2f",
     },
     mapbox_style="carto-positron",
     center={"lat": df_zip_map["lat"].mean(), "lon": df_zip_map["lon"].mean()},
     zoom=10,
-    height=600,
+    height=600
 )
 fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0))
 st.plotly_chart(fig_map, use_container_width=True)
@@ -106,17 +106,15 @@ st.plotly_chart(fig_map, use_container_width=True)
 # ---------- Prepare city-level data (price-to-income version) ----------
 city_data = make_city_view_data(
     df,
-    annual_income=final_income,   # 现在主要用于 Profile，ratio 自己在 dataprep 里算
+    annual_income=final_income,   # 现在不直接参与 ratio，只保留做 profile 用
     year=selected_year,
 )
 
-# 你在 dataprep 里生成了：
+# 这里假设 dataprep.py 中已经生成：
 #   - price_to_income
-#   - afford_gap          (threshold - price_to_income)
-#   - affordable          (afford_gap >= 0)
-# 这里用 afford_gap 来构造可视化用的 gap_for_plot
-dist = city_data["afford_gap"].abs()
-# 定义：affordable 的城市放到坐标轴左侧（负），不太 affordable 放到右侧（正）
+#   - price_to_income_gap
+#   - affordable (True/False, ratio 低于整体 median 为 True)
+dist = city_data["price_to_income_gap"].abs()
 city_data["gap_for_plot"] = np.where(city_data["affordable"], -dist, dist)
 
 # ---------- Sort ----------
@@ -130,8 +128,6 @@ elif sort_option == "Per capita income":
     sorted_data = city_data.sort_values("Per Capita Income", ascending=False)
 else:  # City name
     sorted_data = city_data.sort_values("city_clean")
-
-max_rent = final_income * 0.3 / 12.0  # 仅用于侧边 profile 文案显示
 
 
 # ---------- Layout: left profile card + main right ----------
@@ -150,8 +146,8 @@ with col1:
             <h3 style="margin-top:0;margin-bottom:0.6rem;">Profile &amp; budget</h3>
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
             <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${income:,}</p>
-            <p style="margin:0.1rem 0;"><strong>Housing budget:</strong> 30% of income</p>
-            <p style="margin:0.1rem 0;"><strong>Max affordable rent (30% rule):</strong> ≈ ${rent:,.0f} / month</p>
+            <p style="margin:0.1rem 0;"><strong>Housing budget (Rent):</strong> 30% of income</p>
+            <p style="margin:0.1rem 0;"><strong>Max affordable rent:</strong> ≈ ${rent:,.0f} / month</p>
             <p style="margin:0.4rem 0 0.1rem 0;"><strong>Selected year:</strong> {year}</p>
         </div>
         """.format(
@@ -166,6 +162,7 @@ with col1:
 with col2:
     st.subheader("Price-to-income gap by city")
 
+    # Bar chart for Price-to-Income Ratio
     fig = px.bar(
         sorted_data,
         x="city_clean",
@@ -182,7 +179,6 @@ with col2:
             "median_sale_price": ":,.0f",
             "Per Capita Income": ":,.0f",
             "price_to_income": ":.2f",
-            "afford_gap": ":.2f",
         },
         height=500,
     )
@@ -195,53 +191,45 @@ with col2:
     st.plotly_chart(fig, use_container_width=True)
 
 
-# ------------ Split（按 price-to-income 的 affordable 拆分）------------
+# ------------ Split ------------
 split = st.button("Split price-to-income chart")
 
 if split:
     affordable_data = sorted_data[sorted_data["affordable"]]
     unaffordable_data = sorted_data[~sorted_data["affordable"]]
 
-    st.subheader("Cities with lower price-to-income (green)")
+    st.subheader(f"Affordable Cities (Price-to-Income < {AFFORDABILITY_THRESHOLD})")
     fig_aff = px.bar(
         affordable_data,
         x="city_clean",
         y="gap_for_plot",
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
-        labels={
-            "city_clean": "City",
-            "gap_for_plot": "Distance from median price-to-income",
-        },
+        labels={"city_clean": "City", "gap_for_plot": "Distance from median price-to-income"},
         hover_data={
             "city_clean": True,
             "median_sale_price": ":,.0f",
             "Per Capita Income": ":,.0f",
             "price_to_income": ":.2f",
-            "afford_gap": ":.2f",
         },
         height=380,
     )
     fig_aff.update_layout(xaxis_tickangle=-45)
     st.plotly_chart(fig_aff, use_container_width=True)
 
-    st.subheader("Cities with higher price-to-income (red)")
+    st.subheader(f"Unaffordable Cities (Price-to-Income ≥ {AFFORDABILITY_THRESHOLD})")
     fig_unaff = px.bar(
         unaffordable_data,
         x="city_clean",
         y="gap_for_plot",
         color="affordable",
         color_discrete_map={True: "green", False: "red"},
-        labels={
-            "city_clean": "City",
-            "gap_for_plot": "Distance from median price-to-income",
-        },
+        labels={"city_clean": "City", "gap_for_plot": "Distance from median price-to-income"},
         hover_data={
             "city_clean": True,
             "median_sale_price": ":,.0f",
             "Per Capita Income": ":,.0f",
             "price_to_income": ":.2f",
-            "afford_gap": ":.2f",
         },
         height=380,
     )
