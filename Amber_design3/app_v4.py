@@ -1,8 +1,5 @@
 # app_v4.py
 
-
-# DEC 3 afternoon changes later code
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -35,7 +32,7 @@ st.markdown(
     Those with a ratio between 3.1 to 4.0 inclusive are classified as <strong>"Moderately Unaffordable"</strong>.
     Those with a ratio between 4.1 to 5.0 inclusive are classified as <strong>"Seriously Unaffordable"</strong>.
     Those with a ratio between 5.1 to 8.9 inclusive are classified as <strong>"Severely Unaffordable"</strong>.
-    Those with a ratios &ge; are classified as <strong>"Impossibly Unaffordable"</strong></small>.
+    Those with a ratios &ge; 9.0 are classified as <strong>"Impossibly Unaffordable"</strong></small>.
     </div>
     """,
     unsafe_allow_html=True
@@ -48,36 +45,11 @@ st.markdown(
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
     [data-testid="stAlert"] { display: none !important; }
-    /* Optional: Global tightening */
     .block-container { padding-top: 2rem; }
     </style>
-
     """,
     unsafe_allow_html=True
 )
-
-# # Try to standardize column heights:
-# st.markdown("""
-#     <style>
-#     /* Force columns in a horizontal block to be equal height */
-#     div[data-testid="stHorizontalBlock"] {
-#         align-items: stretch;
-#     }
-    
-#     /* Force the internal containers to expand to fill that height */
-#     div[data-testid="column"] {
-#         display: flex;
-#         flex-direction: column; 
-#     }
-    
-#     /* Target the container with border to grow */
-#     div[data-testid="stVerticalBlockBorderWrapper"] {
-#         flex-grow: 1;
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
 
 MAX_ZIP_RATIO_CLIP = 15.0
 
@@ -88,22 +60,22 @@ def year_selector(df: pd.DataFrame, key: str):
     if not years:
         return None
         
-    # 1. Render the label manually with bigger font
+    # Enhanced label with larger font and color
     st.markdown("""
-        <div style="font-size: 18px; font-weight: 600; margin-bottom: -15px;">
+        <div style="font-size: 20px; font-weight: 700; margin-bottom: -15px; color: #4B0082;">
             Select Year
         </div>
     """, unsafe_allow_html=True)
     
-    # 2. Render the selectbox with the label hidden
     return st.selectbox(
         "Select Year", 
         years, 
         index=len(years) - 1, 
         key=key, 
-        label_visibility="collapsed" 
+        label_visibility="collapsed", 
+        help="Choose the year for comparison."
     )
-    
+
 @st.cache_data(ttl=3600*24)
 def get_data_cached():
     return load_data()
@@ -121,7 +93,6 @@ def calculate_median_ratio_history(dataframe):
 
 @st.cache_data
 def calculate_category_proportions_history(dataframe):
-    """Calculates the % composition of affordability tiers over time."""
     years = sorted(dataframe["year"].unique())
     history_data = []
     
@@ -205,7 +176,6 @@ if selected_year is None:
 
 # 2. Render Header Text
 with header_row_main:
-    # --- [FIX 3] CUSTOM HEADER TO REMOVE TOP MARGIN ---
     st.markdown("""
         <h3 style="margin-top: -5px; padding-top: 0;">
             Bar Chart and User Input ZIP-Code Map
@@ -350,38 +320,25 @@ with main_col_right:
         
         # Right column: Affordability summary card
         with map_col_right:
-            # Get current values from session state (updated by slider/persona changes)
-            # The slider syncs to income_manual_key via sync_manual_to_slider callback
-            # So we read the current value to ensure summary reflects slider changes
             current_income = st.session_state.get("income_manual_key", final_income)
             current_persona = st.session_state.get("profile_radio_key", persona)
             current_max_affordable = AFFORDABILITY_THRESHOLD * current_income
-            # Render affordability summary card
             render_affordability_summary_card(current_income, current_persona, current_max_affordable)
     
-    # ZIP-level Map selector (below the container, above the map)
         st.markdown("#### ZIP-level Map (Select Metro Below)")
         st.markdown("""The map shows whether a region is affordable based on the maximum 
         affordable price calculated in the **Affordability Summary**.""")
+        
         # 1. Extract unique pairs of abbreviation ('city') and full name ('city_full')
         if not city_data.empty:
             metro_map_df = city_data[['city', 'city_full']].drop_duplicates()
-            
-            # Create dictionary: { "Atlanta-..." : "(ATL) - Atlanta-..." }
             metro_display_map = {
                 row['city_full']: f"({row['city']}) - {row['city_full']}" 
                 for index, row in metro_map_df.iterrows()
             }
-            
-            # Use the keys (full names) for the list of options
             map_city_options_full = sorted(metro_display_map.keys())
-            
-            # Helper function for display
-            def format_metro_func(option):
-                return metro_display_map.get(option, option)
-                
+            format_metro_func = lambda option: metro_display_map.get(option, option)
         else:
-            # Fallback if city_data is missing for some reason
             map_city_options_full = sorted(df["city_full"].unique())
             format_metro_func = lambda x: x
 
@@ -392,16 +349,7 @@ with main_col_right:
             index=0,
             key="map_metro_select"
         )
-        # # )
-        # selected_map_metro_full = st.selectbox(
-        #     "Choose Metro Area for Map:",
-        #     options=map_city_options_full,
-        #     format_func=lambda x: metro_display_map.get(x, x), # <--- This handles the display change
-        #     index=0,
-        #     key="map_metro_select"
-        # )
 
-        # Map and Snapshot container (below the selector)
         city_clicked_df = df[df['city_full'] == selected_map_metro_full]
         
         if city_clicked_df.empty:
@@ -437,7 +385,7 @@ with main_col_right:
                     )
                     time.sleep(0.5) 
 
-                # Load Map Data - use unfiltered df to show all zip codes
+                # Load Map Data
                 df_zip = load_city_zip_data(city_clicked, df_full=df, max_pci=final_income)
                 
                 if "year" in df_zip.columns:
@@ -461,8 +409,7 @@ with main_col_right:
                         
                         df_zip_map["affordability_rating"] = df_zip_map[RATIO_COL].apply(classify_affordability)
                         
-                        # Calculate affordability relative to max_affordable_price
-                        # Map prices to color scale: 0-0.5 for affordable (green), 0.5-1.0 for unaffordable (red)
+                        # Map Prices to Color
                         min_price = df_zip_map[price_col].min()
                         max_price = df_zip_map[price_col].max()
                         
@@ -473,12 +420,9 @@ with main_col_right:
                         # Initialize color_value column
                         df_zip_map["color_value"] = np.nan
                         
-                        # Map affordable areas (price < max_affordable_price) to 0.0 - 0.5
-                        # Darker green for cheaper areas (closer to 0.0)
                         if affordable_mask.any():
                             affordable_prices = df_zip_map.loc[affordable_mask, price_col]
                             if affordable_prices.min() < max_affordable_price:
-                                # Normalize: min_price -> 0.0, max_affordable_price -> 0.5
                                 affordable_range = max_affordable_price - min_price
                                 if affordable_range > 0:
                                     df_zip_map.loc[affordable_mask, "color_value"] = (
@@ -487,12 +431,9 @@ with main_col_right:
                                 else:
                                     df_zip_map.loc[affordable_mask, "color_value"] = 0.25
                         
-                        # Map unaffordable areas (price >= max_affordable_price) to 0.5 - 1.0
-                        # Darker red for more expensive areas (closer to 1.0)
                         if unaffordable_mask.any():
                             unaffordable_prices = df_zip_map.loc[unaffordable_mask, price_col]
                             if unaffordable_prices.max() >= max_affordable_price:
-                                # Normalize: max_affordable_price -> 0.5, max_price -> 1.0
                                 unaffordable_range = max_price - max_affordable_price
                                 if unaffordable_range > 0:
                                     df_zip_map.loc[unaffordable_mask, "color_value"] = (
@@ -501,7 +442,6 @@ with main_col_right:
                                 else:
                                     df_zip_map.loc[unaffordable_mask, "color_value"] = 0.75
                         
-                        # Ensure all values are in [0, 1] range
                         df_zip_map["color_value"] = df_zip_map["color_value"].clip(0, 1)
 
                         geojson_path = os.path.join(
@@ -517,13 +457,9 @@ with main_col_right:
                             with open(geojson_path, "r") as f:
                                 zip_geojson = json.load(f)
 
-                            # --- FIX START: FORCE STRING FORMAT WITH LEADING ZEROS ---
-                            # Boston ZIPs are 02xxx. Integers (2xxx) won't match GeoJSON ("02xxx").
                             df_zip_map["zip_str_padded"] = df_zip_map["zip_code_int"].astype(str).str.zfill(5)
-                            # --- FIX END --------------------------------------------
 
-                            # Create custom color scale: green (affordable) to red (unaffordable)
-                            # Colors transition from dark green -> light green -> light red -> dark red
+                            # Custom color scale for affordability
                             custom_colorscale = [
                                 [0.0, "rgb(0, 100, 0)"],      # Dark green (very affordable)
                                 [0.3, "rgb(34, 139, 34)"],   # Medium green
@@ -536,7 +472,7 @@ with main_col_right:
                             fig_map = px.choropleth_mapbox(
                                 df_zip_map,
                                 geojson=zip_geojson,
-                                locations="zip_str_padded", # UPDATED: Use the padded string column
+                                locations="zip_str_padded", 
                                 featureidkey="properties.ZCTA5CE10",
                                 color="color_value", 
                                 color_continuous_scale=custom_colorscale,
@@ -547,8 +483,6 @@ with main_col_right:
                                     income_col: ":,.0f",
                                     "zip_str_padded":False,
                                     "color_value": False,
-                                    # RATIO_COL: ":.2f",
-                                    # "affordability_rating": True,
                                 },
                                 mapbox_style="carto-positron",
                                 center={
@@ -559,19 +493,16 @@ with main_col_right:
                                 height=454,
                             )
 
-                            # Update colorbar to show meaningful labels
-                            # Calculate tick positions and labels based on actual price mapping
+                            # Update colorbar with meaningful labels
                             tick_vals = [0.0, 0.25, 0.5, 0.75, 1.0]
                             tick_labels = []
                             for tv in tick_vals:
                                 if tv <= 0.5:
-                                    # Affordable range: map from 0.0-0.5 to min_price - max_affordable_price
                                     if affordable_mask.any() and min_price < max_affordable_price:
                                         price_val = min_price + (tv / 0.5) * (max_affordable_price - min_price)
                                     else:
                                         price_val = min_price
                                 else:
-                                    # Unaffordable range: map from 0.5-1.0 to max_affordable_price - max_price
                                     if unaffordable_mask.any() and max_price > max_affordable_price:
                                         price_val = max_affordable_price + ((tv - 0.5) / 0.5) * (max_price - max_affordable_price)
                                     else:
@@ -586,8 +517,8 @@ with main_col_right:
                                     ticktext=tick_labels,
                                 ),
                             )
-                            
-                            # Add annotation for threshold
+
+                            # Add threshold annotation
                             fig_map.add_annotation(
                                 text=f"Threshold: ${max_affordable_price:,.0f}",
                                 xref="paper", yref="paper",
@@ -598,11 +529,9 @@ with main_col_right:
                                 borderwidth=1,
                                 font=dict(size=10)
                             )
-                            
-                            if should_trigger_spinner: loading_message_placeholder.empty() 
 
-                            st.plotly_chart(fig_map, use_container_width=True, config={"scrollZoom": True})
-                            
+                            if should_trigger_spinner: loading_message_placeholder.empty() 
+                            st.plotly_chart(fig_map, use_container_width=True)
                             st.session_state.last_drawn_city = selected_map_metro_full 
                             st.session_state.last_drawn_income = final_income
         
@@ -610,150 +539,13 @@ with main_col_right:
         with snapshot_col_right:
             if city_clicked is not None:
                 city_row = city_data[city_data["city"] == city_clicked] 
-
                 if not city_row.empty:
                     row = city_row.iloc[0]
                     st.markdown(f"#### Metro Area Snapshot: {row['city_full']} ({selected_year})")
 
-                    # st.markdown(
-                    #     f"""
-                    #     - Median sale price: **${row['Median Sale Price']:,.0f}**
-                    #     - Per-capita income: **${row['Per Capita Income']:,.0f}**
-                    #     - Metro-area price-to-income ratio: **{row[RATIO_COL]:.2f}**
-                    #     - **Affordability Rating:** **{row['affordability_rating']}** """
-                    # )
                     st.markdown(
                         f"""
                         - Median sale price: **${row['Median Sale Price']:,.0f}**
                         - Per-capita income: **${row['Per Capita Income']:,.0f}**
                          """
                     )
-
-# =====================================================================
-#   SECTION 4: OPTIONAL SPLIT CHART (BY CATEGORY)
-# =====================================================================
-
-st.markdown("---")
-st.markdown("### Advanced Metro Area Comparisons by Affordability Category")
-
-with st.expander("Show breakdown by Affordability Rating"):
-    if 'sorted_data' in locals() and not sorted_data.empty:
-        
-        # Define the exact order and list of categories to iterate through
-        categories_to_plot = [
-            "Affordable",
-            "Moderately Unaffordable",
-            "Seriously Unaffordable",
-            "Severely Unaffordable",
-            "Impossibly Unaffordable"
-        ]
-
-        for cat in categories_to_plot:
-            # Filter data for just this category
-            cat_data = sorted_data[sorted_data["affordability_rating"] == cat].copy()
-            
-            # Create a visual header
-            st.markdown(f"**{cat}**")
-            
-            if cat_data.empty:
-                st.info(f"No cities in the current selection fall into the '{cat}' category.")
-            else:
-                # Sort by ratio for the chart (lowest to highest for that group)
-                cat_data = cat_data.sort_values(RATIO_COL, ascending=True)
-                
-                fig_cat = px.bar(
-                    cat_data,
-                    x="city",
-                    y=RATIO_COL,
-                    color="affordability_rating",
-                    color_discrete_map=AFFORDABILITY_COLORS,
-                    # We hide the legend because the title explains the category
-                    labels={"city": "City", RATIO_COL: "Price-to-income ratio"},
-                    hover_data={
-                        "city_full": True, 
-                        "Median Sale Price": ":,.0f", 
-                        RATIO_COL: ":.2f",
-                        "affordability_rating": False # redundant in hover
-                    },
-                    height=300,
-                )
-                
-                fig_cat.update_layout(
-                    xaxis_tickangle=-45, 
-                    bargap=0.2,
-                    showlegend=False, # Hide legend as color is uniform per chart
-                    margin=dict(l=0, r=0, t=0, b=0)
-                )
-                st.plotly_chart(fig_cat, use_container_width=True)
-            
-            # Add a small divider between charts
-            st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px dashed #eee;'>", unsafe_allow_html=True)
-
-    else:
-        st.info("No data available to show advanced city comparisons based on current filters.")
-
-
-# =====================================================================
-#   SECTION 5: DATASET HISTORICAL OVERVIEW (MOVED TO BOTTOM)
-# =====================================================================
-# st.markdown("---")
-# st.markdown("### Dataset Historical Overview")
-
-# with st.container(border=True):
-#     # Snapshot Metrics (Above the side-by-side plots)
-#     st.markdown(f"#### Dataset Snapshot ({selected_year})")
-
-#     # Side-by-Side Plots
-#     overall_median_ratio_left, afford_prop_ratio_right = st.columns([1, 1])
-
-#     # Left: Median Ratio History
-#     with overall_median_ratio_left:
-#         st.markdown("##### Median Affordability Multiplier Over Time")
-#         fig_history = px.line(
-#             df_history,
-#             x="year",
-#             y="median_ratio",
-#             markers=True,
-#             labels={"year": "Year", "median_ratio": "Median Ratio"},
-#             height=300,
-#         )
-#         fig_history.update_layout(
-#             margin=dict(l=20, r=20, t=10, b=10),
-#             yaxis_range=[0, df_history['median_ratio'].max() * 1.1],
-#         )
-#         st.plotly_chart(fig_history, use_container_width=True)
-
-#     # Right: Proportions History
-#     with afford_prop_ratio_right:
-#         st.markdown("##### Distribution of Affordability Categories Over Time")
-        
-#         custom_colors = {
-#             "Affordable (<3.0)": "green",
-#             "Moderately Unaffordable (3.1-4.0)": "#FFD700",
-#             "Seriously Unaffordable (4.1-5.0)": "orange",
-#             "Severely Unaffordable (5.1-9.0)": "red",
-#             "Impossibly Unaffordable (>9.0)": "maroon"
-#         }
-
-#         fig_prop = px.line(
-#             df_prop_history,
-#             x="year",
-#             y="percentage",
-#             color="category",
-#             color_discrete_map=custom_colors,
-#             markers=True,
-#             labels={"percentage": "% of Metro Areas", "year": "Year", "category": "Category"},
-#             height=300
-#         )
-#         fig_prop.update_layout(
-#             margin=dict(l=20, r=20, t=10, b=10),
-#             yaxis_title="% of Cities",
-#             legend=dict(
-#                 orientation="h",
-#                 yanchor="bottom",
-#                 y=-0.6,
-#                 xanchor="center",
-#                 x=0.5
-#             )
-#         )
-#         st.plotly_chart(fig_prop, use_container_width=True)
