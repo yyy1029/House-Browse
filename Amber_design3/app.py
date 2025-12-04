@@ -191,10 +191,11 @@ st.markdown("""
 with st.container():
     # Explanation text and Year Selector now close together
     st.markdown(""" 
-        The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
-        metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
-        The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. 
-        Adjust the year the data is being displayed using the year selector to the right.
+        The top section allows you to input your profile and income details, which will determine the maximum affordable price based on the PTI (price-to-income) ratio. The left column shows how the PTI ratio differs across metro areas. The right column displays detailed information for a specific metro area based on your income, helping you figure out which zip codes are affordable. The colors on the zip code map indicate how affordable each area is relative to your maximum affordable price. 
+
+Adjust the data displayed by selecting a year below.
+
+
     """)
     
     # Render Year Selector below the explanation
