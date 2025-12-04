@@ -431,6 +431,13 @@ from zip_module import load_city_zip_data, get_zip_coordinates
 from dataprep import load_data, make_city_view_data, RATIO_COL, AFFORDABILITY_THRESHOLD, apply_income_filter, AFFORDABILITY_CATEGORIES, AFFORDABILITY_COLORS, classify_affordability, make_zip_view_data
 from ui_components import income_control_panel, persona_income_slider, render_affordability_summary_card
 
+st.markdown("""
+    <style>
+        .css-1aumxhk { font-size: 12px; }  /* 影响 selectbox 和 multiselect 字体 */
+        .css-1l0j7j4 { font-size: 12px; }  /* 影响标签字体 */
+    </style>
+""", unsafe_allow_html=True)
+
 # render_manual_input_and_summary
 # ---------- Global config ----------
 st.set_page_config(page_title="Design 3 – Price Affordability Finder", layout="wide")
@@ -450,7 +457,7 @@ st.markdown(
     Those with a ratio between 3.1 to 4.0 inclusive are classified as <strong>"Moderately Unaffordable"</strong>.
     Those with a ratio between 4.1 to 5.0 inclusive are classified as <strong>"Seriously Unaffordable"</strong>.
     Those with a ratio between 5.1 to 8.9 inclusive are classified as <strong>"Severely Unaffordable"</strong>.
-    Those with a ratios &ge; are classified as <strong>"Impossibly Unaffordable"</strong></small>.
+    Those with a ratios &ge; 9.0 are classified as <strong>"Impossibly Unaffordable"</strong></small>.
     </div>
     """,
     unsafe_allow_html=True
@@ -470,29 +477,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-# # Try to standardize column heights:
-# st.markdown("""
-#     <style>
-#     /* Force columns in a horizontal block to be equal height */
-#     div[data-testid="stHorizontalBlock"] {
-#         align-items: stretch;
-#     }
-    
-#     /* Force the internal containers to expand to fill that height */
-#     div[data-testid="column"] {
-#         display: flex;
-#         flex-direction: column; 
-#     }
-    
-#     /* Target the container with border to grow */
-#     div[data-testid="stVerticalBlockBorderWrapper"] {
-#         flex-grow: 1;
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
 
 MAX_ZIP_RATIO_CLIP = 15.0
 
@@ -603,7 +587,9 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 header_row_main, header_row_year = st.columns([4, 1]) # Middle Header
-main_col_left, main_col_right = st.columns([1, 1])    # Main Content
+# main_col_left, main_col_right = st.columns([1, 1])    # Main Content
+main_col_left, main_col_right = st.columns([2, 3])  # modify
+
 
 
 # =====================================================================
@@ -654,7 +640,9 @@ if not city_data.empty:
 
 # --- LEFT COLUMN: CITY BAR CHART ---
 with main_col_left:
-    with st.container(border=True):
+    # with st.container(border=True):
+    with st.expander("Affordability Ranking", expanded=False):  # expanded=False 
+
         st.markdown("#### Metro Area Affordability Ranking")
 
         if city_data.empty:
@@ -1107,68 +1095,3 @@ with st.expander("Show breakdown by Affordability Rating"):
     else:
         st.info("No data available to show advanced city comparisons based on current filters.")
 
-
-# =====================================================================
-#   SECTION 5: DATASET HISTORICAL OVERVIEW (MOVED TO BOTTOM)
-# =====================================================================
-# st.markdown("---")
-# st.markdown("### Dataset Historical Overview")
-
-# with st.container(border=True):
-#     # Snapshot Metrics (Above the side-by-side plots)
-#     st.markdown(f"#### Dataset Snapshot ({selected_year})")
-
-#     # Side-by-Side Plots
-#     overall_median_ratio_left, afford_prop_ratio_right = st.columns([1, 1])
-
-#     # Left: Median Ratio History
-#     with overall_median_ratio_left:
-#         st.markdown("##### Median Affordability Multiplier Over Time")
-#         fig_history = px.line(
-#             df_history,
-#             x="year",
-#             y="median_ratio",
-#             markers=True,
-#             labels={"year": "Year", "median_ratio": "Median Ratio"},
-#             height=300,
-#         )
-#         fig_history.update_layout(
-#             margin=dict(l=20, r=20, t=10, b=10),
-#             yaxis_range=[0, df_history['median_ratio'].max() * 1.1],
-#         )
-#         st.plotly_chart(fig_history, use_container_width=True)
-
-#     # Right: Proportions History
-#     with afford_prop_ratio_right:
-#         st.markdown("##### Distribution of Affordability Categories Over Time")
-        
-#         custom_colors = {
-#             "Affordable (<3.0)": "green",
-#             "Moderately Unaffordable (3.1-4.0)": "#FFD700",
-#             "Seriously Unaffordable (4.1-5.0)": "orange",
-#             "Severely Unaffordable (5.1-9.0)": "red",
-#             "Impossibly Unaffordable (>9.0)": "maroon"
-#         }
-
-#         fig_prop = px.line(
-#             df_prop_history,
-#             x="year",
-#             y="percentage",
-#             color="category",
-#             color_discrete_map=custom_colors,
-#             markers=True,
-#             labels={"percentage": "% of Metro Areas", "year": "Year", "category": "Category"},
-#             height=300
-#         )
-#         fig_prop.update_layout(
-#             margin=dict(l=20, r=20, t=10, b=10),
-#             yaxis_title="% of Cities",
-#             legend=dict(
-#                 orientation="h",
-#                 yanchor="bottom",
-#                 y=-0.6,
-#                 xanchor="center",
-#                 x=0.5
-#             )
-#         )
-#         st.plotly_chart(fig_prop, use_container_width=True)
