@@ -436,9 +436,9 @@ with main_col_right:
                         if should_trigger_spinner: loading_message_placeholder.empty()
                         st.error("Map data processing failed.")
                     else:
-                                                if RATIO_COL not in df_zip_map.columns:
-                            denom_zip = df_zip_map[income_col].replace(0, np.nan)
-                            df_zip_map[RATIO_COL] = df_zip_map[price_col] / denom_zip
+                        if RATIO_COL not in df_zip_map.columns:
+                        denom_zip = df_zip_map[income_col].replace(0, np.nan)
+                        df_zip_map[RATIO_COL] = df_zip_map[price_col] / denom_zip
                         
                         df_zip_map["affordability_rating"] = df_zip_map[RATIO_COL].apply(classify_affordability)
                         
