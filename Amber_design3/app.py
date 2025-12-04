@@ -1021,7 +1021,7 @@ with main_col_right:
                     # st.markdown(
                     #     f"""
                     #     - Median sale price: **${row['Median Sale Price']:,.0f}**
-                    #     - Per-capita income: **${row['Per Capita Income']:,.0f}**
+                    #     - Household Income: **${row['Per Capita Income']:,.0f}**
                     #     - Metro-area price-to-income ratio: **{row[RATIO_COL]:.2f}**
                     #     - **Affordability Rating:** **{row['affordability_rating']}** """
                     # )
