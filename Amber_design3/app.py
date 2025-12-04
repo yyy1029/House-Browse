@@ -68,7 +68,6 @@ def year_selector(df: pd.DataFrame, key: str):
     if not years:
         return None
         
-    # 去掉负 margin，防止标题被上边缘“吃掉”
     st.markdown("""
         <div style="font-size: 20px; font-weight: 700; margin-bottom: 4px; color: #4B0082;">
             Select Year
@@ -154,24 +153,21 @@ if 'last_drawn_income' not in st.session_state:
 #   1. CALCULATION PRE-REQUISITES
 # =====================================================================
 
-# 这里 income_control_panel 只处理逻辑（session_state），不画 UI
 final_income, persona = income_control_panel()
 max_affordable_price = AFFORDABILITY_THRESHOLD * final_income
 df_filtered_by_income = apply_income_filter(df, final_income)
 
-# 历史数据（暂时没在页面展示，但逻辑保留）
 df_history = calculate_median_ratio_history(df)
 df_prop_history = calculate_category_proportions_history(df)
 
 
-# --- 分隔线 ---
 st.markdown("""
     <hr style="border: none; border-top: 1px solid #e6e6e6; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
 
 
 # =====================================================================
-#   2. 顶部控制区：左边 Profile + Income，右边 Year Selector
+#   2. top controller:Profile + Income+Year Selector
 # =====================================================================
 
 controls_left, controls_right = st.columns([3, 1])
@@ -179,9 +175,7 @@ controls_left, controls_right = st.columns([3, 1])
 with controls_left:
     with st.container(border=True):
         st.markdown("### User Profile & Budget")
-        # 这里的 UI 文案都来自 ui_components 内部，保持不变
         persona_income_slider(final_income, persona)
-        # 使用 session_state 中最新值来渲染 Summary，保证和 slider 同步
         current_income = st.session_state.get("income_manual_key", final_income)
         current_persona = st.session_state.get("profile_radio_key", persona)
         current_max_affordable = AFFORDABILITY_THRESHOLD * current_income
@@ -189,42 +183,35 @@ with controls_left:
 
 with controls_right:
     with st.container(border=True):
-        selected_year = year_selector(df, key="year_main_selector") 
+        st.markdown(""" 
+            The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
+            metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
+            The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. 
+            Adjust the year the data is being displayed using the year selector to the right.
+        """)
 
-# 防御：没有选中时用最大年份
+# =====================================================================
+#   3. year selector
+# =====================================================================
+
+# Move the year selector under the "Bar Chart and User Input ZIP-Code Map" description
+with controls_left:
+    selected_year = year_selector(df, key="year_main_selector")
+
 if selected_year is None:
     selected_year = df["year"].max()
-
-
-# =====================================================================
-#   3. 说明文案（铺在控制区下面）
-# =====================================================================
-
-st.markdown("""
-    <h3 style="margin-top: 5px; padding-top: 0;">
-        Bar Chart and User Input ZIP-Code Map
-    </h3>
-""", unsafe_allow_html=True)
-st.markdown("""The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
-metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
-The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. **Adjust the year 
-the data is being displayed using the year selector to the right.**""")
-
-
-# 再加一条细一点的分隔线，把说明和主体区域分开
+    
 st.markdown("""
     <hr style="border: none; border-top: 1px solid #f0f0f0; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
 
-
 # =====================================================================
-#   4. 主体布局：左 Bar Chart，右 Map + Snapshot
+#   4. Bar Chart， Map + Snapshot
 # =====================================================================
 
-main_col_left, main_col_right = st.columns([3, 4])  # 右边 map 区域稍微宽一点
+main_col_left, main_col_right = st.columns([3, 4]) 
 
 
-# ---------- 4A. 左侧：城市柱状图 ----------
 with main_col_left:
     with st.container(border=True):
         st.markdown("#### Metro Area Affordability Ranking")
@@ -342,14 +329,14 @@ with main_col_left:
                     st.plotly_chart(fig_city, use_container_width=True)
 
 
-# ---------- 4B. 右侧：Map + Snapshot ----------
+# ---------- 4B. Map + Snapshot ----------
 with main_col_right:
     with st.container(border=True):
         st.markdown("#### ZIP-level Map (Select Metro Below)")
         st.markdown("""The map shows whether a region is affordable based on the maximum 
         affordable price calculated in the **Affordability Summary**.""")
 
-        # 1. 提取 city-full 名称，构建下拉菜单
+       
         if not city_data.empty:
             metro_map_df = city_data[['city', 'city_full']].drop_duplicates()
             metro_display_map = {
@@ -379,7 +366,7 @@ with main_col_right:
             geojson_code = city_clicked_df["city_geojson_code"].iloc[0]
             city_clicked = geojson_code
 
-        # MAP 显示区域（整宽）
+   
         if city_clicked is None:
             st.info("Select a Metro Area from the dropdown above to view the ZIP-code map.")
         else:
