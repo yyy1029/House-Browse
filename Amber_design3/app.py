@@ -167,7 +167,7 @@ st.markdown("""
 
 
 # =====================================================================
-#   2. top controller:Profile + Income+Year Selector
+#   2. Control Panel: Left - Profile + Income, Right - Year Selector
 # =====================================================================
 
 controls_left, controls_right = st.columns([3, 1])
@@ -175,6 +175,7 @@ controls_left, controls_right = st.columns([3, 1])
 with controls_left:
     with st.container(border=True):
         st.markdown("### User Profile & Budget")
+        # Render Persona and Income Controls
         persona_income_slider(final_income, persona)
         current_income = st.session_state.get("income_manual_key", final_income)
         current_persona = st.session_state.get("profile_radio_key", persona)
@@ -183,24 +184,25 @@ with controls_left:
 
 with controls_right:
     with st.container(border=True):
+        # Explanation text and Year Selector now close together
         st.markdown(""" 
             The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
             metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
             The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. 
             Adjust the year the data is being displayed using the year selector to the right.
         """)
+        
+        # Year Selector control
+        selected_year = year_selector(df, key="year_main_selector")
 
-# =====================================================================
-#   3. year selector
-# =====================================================================
-
-# Move the year selector under the "Bar Chart and User Input ZIP-Code Map" description
-with controls_left:
-    selected_year = year_selector(df, key="year_main_selector")
-
+# Default: Use the maximum year if none is selected
 if selected_year is None:
     selected_year = df["year"].max()
-    
+
+# =====================================================================
+#   3. Main Section
+# =====================================================================
+
 st.markdown("""
     <hr style="border: none; border-top: 1px solid #f0f0f0; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
