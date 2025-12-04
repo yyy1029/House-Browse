@@ -381,7 +381,7 @@ with main_col_right:
             should_trigger_spinner = map_selection_changed or income_changed
 
             st.markdown(f"**Map for {selected_map_metro_full} ({selected_year})**")
-            st.markdown("""Red is used for more unaffordable areas, and green is used for affordable areas.  """)
+            st.markdown("""Red: unaffordable given user input; green: affordable given user input.  """)
             
             if should_trigger_spinner:
                 loading_message_placeholder = st.empty()
