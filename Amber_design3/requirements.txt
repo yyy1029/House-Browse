@@ -7,4 +7,3 @@ altair>=5.0
 databricks-sdk>=0.26
 python-dotenv>=1.0
 pgeocode
-streamlit-plotly-events
