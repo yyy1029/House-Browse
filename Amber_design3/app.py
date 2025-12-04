@@ -153,51 +153,57 @@ if 'last_drawn_income' not in st.session_state:
 #   1. CALCULATION PRE-REQUISITES
 # =====================================================================
 
+# Here, the income control panel logic is processed (session_state)
 final_income, persona = income_control_panel()
 max_affordable_price = AFFORDABILITY_THRESHOLD * final_income
 df_filtered_by_income = apply_income_filter(df, final_income)
 
+# Calculate historical data (but it's not displayed yet)
 df_history = calculate_median_ratio_history(df)
 df_prop_history = calculate_category_proportions_history(df)
 
 
+# --- Divider ---
 st.markdown("""
     <hr style="border: none; border-top: 1px solid #e6e6e6; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
 
 
 # =====================================================================
-#   2. Control Panel: Left - Profile + Income, Right - Year Selector
+#   2. Layout: User Profile (Full Width) and Year Selector with Explanation (Vertical)
 # =====================================================================
 
-controls_left, controls_right = st.columns([3, 1])
+# First Section: Full Width User Profile
+st.markdown("### User Profile & Budget")
+with st.container():
+    # Render Persona and Income Controls
+    persona_income_slider(final_income, persona)
+    current_income = st.session_state.get("income_manual_key", final_income)
+    current_persona = st.session_state.get("profile_radio_key", persona)
+    current_max_affordable = AFFORDABILITY_THRESHOLD * current_income
+    render_affordability_summary_card(current_income, current_persona, current_max_affordable)
 
-with controls_left:
-    with st.container(border=True):
-        st.markdown("### User Profile & Budget")
-        # Render Persona and Income Controls
-        persona_income_slider(final_income, persona)
-        current_income = st.session_state.get("income_manual_key", final_income)
-        current_persona = st.session_state.get("profile_radio_key", persona)
-        current_max_affordable = AFFORDABILITY_THRESHOLD * current_income
-        render_affordability_summary_card(current_income, current_persona, current_max_affordable)
+# Second Section: Year Selector and Explanation Below User Profile
+st.markdown("""
+    <hr style="border: none; border-top: 1px solid #f0f0f0; margin-top: 5px; margin-bottom: 10px;">
+    """, unsafe_allow_html=True)
 
-with controls_right:
-    with st.container(border=True):
-        # Explanation text and Year Selector now close together
-        st.markdown(""" 
-            The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
-            metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
-            The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. 
-            Adjust the year the data is being displayed using the year selector to the right.
-        """)
-        
-        # Year Selector control
-        selected_year = year_selector(df, key="year_main_selector")
+with st.container():
+    # Explanation text and Year Selector now close together
+    st.markdown(""" 
+        The left column allows users to get an idea of how the PTI (price-to-income) ratio differs across the different 
+        metro areas. The right column allows a user income details to figure out zip codes in a specific metro area that are affordable. 
+        The colors on the zip code map indicate how affordable that area is relative to the maximum affordable price. 
+        Adjust the year the data is being displayed using the year selector to the right.
+    """)
+    
+    # Render Year Selector below the explanation
+    selected_year = year_selector(df, key="year_main_selector")
 
 # Default: Use the maximum year if none is selected
 if selected_year is None:
     selected_year = df["year"].max()
+
 
 # =====================================================================
 #   3. Main Section
