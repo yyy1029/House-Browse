@@ -243,7 +243,7 @@ def load_data() -> pd.DataFrame:
             "median_sale_price": "median_sale_price",
             "per_capita_income": "per_capita_income",
             "Median Sale Price": "median_sale_price",
-            "Per Capita Income": "per_capita_income",
+            "Household Income": "per_capita_income",
             "city": "city_geojson_code"  # Preserve original code (ATL) here
         },
         inplace=True,
