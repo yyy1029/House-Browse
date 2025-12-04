@@ -34,7 +34,7 @@ st.markdown(
     Use this tool to allow users to compare cities by <strong> PTI (price-to-income ratio) </strong> and select metro areas of interest to explore ZIP-code level details.<br>
     <strong>PTI Ratio: </strong>
     <span style="background-color: #f0f2f6; padding: 2px 6px; border-radius: 4px;">
-            <strong>Median Sale Price / Househould Income</strong>
+            <strong>Median Sale Price / Median Househould Income</strong>
     </span><br>
     <small>Lower ratios indicate better affordability. 
     In this dashboard, cities with a ratio &le; 3.0 are classified as <strong>"Affordable"</strong>.
@@ -541,7 +541,6 @@ with main_col_right:
                         st.session_state.last_drawn_city = selected_map_metro_full 
                         st.session_state.last_drawn_income = final_income
 
-        # Snapshot 卡片放在 Map 下方，视觉上是“阅读顺序”
         if city_clicked is not None:
             if not city_data.empty:
                 city_row = city_data[city_data["city"] == city_clicked] 
@@ -551,7 +550,7 @@ with main_col_right:
                     st.markdown(
                         f"""
                         - Median sale price: **${row['Median Sale Price']:,.0f}**
-                        - Household income: **${row['Per Capita Income']:,.0f}**
+                        - Median Household income: **${row['Per Capita Income']:,.0f}**
                          """
                     )
 
