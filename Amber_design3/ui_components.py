@@ -1,80 +1,3 @@
-# """
-# Reusable UX-style control panel components for Design 3.
-# """
-
-# import streamlit as st
-
-
-# def income_control_panel():
-#     """
-#     Sidebar: persona + smooth income slider + manual input box.
-
-#     Returns
-#     -------
-#     final_income : float
-#     persona      : str
-#     """
-
-#     st.sidebar.markdown("### Who are you?")
-
-#     persona = st.sidebar.radio(
-#         "Choose a profile",
-#         options=["Student", "Young professional", "Family"],
-#         index=1,
-#         help="We use this to suggest a starting income level.",
-#     )
-
-#     # Persona default incomes
-#     persona_defaults = {
-#         "Student": 30000,
-#         "Young professional": 60000,
-#         "Family": 90000,
-#     }
-#     default_income = persona_defaults[persona]
-
-#     st.sidebar.markdown("### Budget settings")
-
-#     # ---- Step 1: slider ----
-#     income_slider = st.sidebar.slider(
-#         "Annual income (rough adjustment)",
-#         min_value=20000,
-#         max_value=200000,
-#         value=default_income,
-#         step=1000,
-#     )
-
-#     # ---- Step 2: inputbox ----
-#     manual_income = st.sidebar.number_input(
-#         "Exact annual income ($)",
-#         min_value=20000,
-#         max_value=200000,
-#         value=income_slider,
-#         step=500,
-#         format="%d",
-#         help="Use this box to fine-tune the exact value.",
-#     )
-
-#     final_income = manual_income
-
-#     st.sidebar.caption(
-#         "Tip: use the slider for rough adjustment and the box for precise input."
-#     )
-
-#     st.sidebar.markdown("---")
-#     st.sidebar.markdown(
-#         """
-#         **Price-to-Income rule**
-
-#         We evaluate housing affordability using:
-
-#         > **Median Sale Price / Per Capita Income**
-
-#         Lower ratios indicate better affordability.  
-#         In this dashboard, cities with a ratio **≤ 5.0** are treated as relatively more affordable.
-#         """
-#     )
-
-#     return final_income, persona
 # ui_components.py
 # Fixing warning message above Exact annual income ($) and cleaning misc captions 
 
@@ -128,7 +51,6 @@ def get_income_and_persona_logic():
 def render_affordability_summary_card(final_income, persona, max_affordable_price):
     """
     Renders just the Affordability Summary Card.
-    (Can be used anywhere to display the summary)
     """
     st.markdown("#### Affordability Summary")
 
@@ -141,7 +63,7 @@ def render_affordability_summary_card(final_income, persona, max_affordable_pric
             border: 1px solid #444;
             ">
             <p style="margin:0.1rem 0;"><strong>Profile:</strong> {persona}</p>
-            <p style="margin:0.1rem 0;"><strong>Annual income:</strong> ${int(final_income):,}</p>
+            <p style="margin:0.1rem 0;"><strong>Household income:</strong> ${int(final_income):,}</p> <!-- Change label here -->
             <p style="margin:0.1rem 0;"><strong>Max Affordable Price (from PTI thresholds):</strong> ≈ ${max_affordable_price:,.0f}</p> 
         </div>
         """,
