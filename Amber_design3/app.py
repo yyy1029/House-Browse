@@ -34,7 +34,7 @@ st.markdown(
     Use this tool to allow users to compare cities by <strong> PTI (price-to-income ratio) </strong> and select metro areas of interest to explore ZIP-code level details.<br>
     <strong>PTI Ratio: </strong>
     <span style="background-color: #f0f2f6; padding: 2px 6px; border-radius: 4px;">
-            <strong>Median Sale Price / Per Capita Income</strong>
+            <strong>Median Sale Price / Househould Income</strong>
     </span><br>
     <small>Lower ratios indicate better affordability. 
     In this dashboard, cities with a ratio &le; 3.0 are classified as <strong>"Affordable"</strong>.
