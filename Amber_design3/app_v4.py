@@ -39,7 +39,6 @@ st.markdown(
 )
 
 # Inject CSS
-
 st.markdown(
     """
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
@@ -76,68 +75,11 @@ def year_selector(df: pd.DataFrame, key: str):
         help="Choose the year for comparison."
     )
 
-@st.cache_data(ttl=3600*24)
-def get_data_cached():
-    return load_data()
-
-@st.cache_data
-def calculate_median_ratio_history(dataframe):
-    years = sorted(dataframe["year"].unique())
-    history_data = []
-    for yr in years:
-        city_data_yr = make_city_view_data(dataframe, annual_income=0, year=yr, budget_pct=30)
-        if not city_data_yr.empty and RATIO_COL in city_data_yr.columns:
-            median_ratio = city_data_yr[RATIO_COL].median()
-            history_data.append({"year": yr, "median_ratio": median_ratio})
-    return pd.DataFrame(history_data)
-
-@st.cache_data
-def calculate_category_proportions_history(dataframe):
-    years = sorted(dataframe["year"].unique())
-    history_data = []
-    
-    def classify_strict(ratio):
-        if ratio < 3.0: return "Affordable (<3.0)"
-        elif ratio <= 4.0: return "Moderately Unaffordable (3.1-4.0)"
-        elif ratio <= 5.0: return "Seriously Unaffordable (4.1-5.0)"
-        elif ratio <= 9.0: return "Severely Unaffordable (5.1-9.0)" 
-        else: return "Impossibly Unaffordable (>9.0)"
-
-    category_order = [
-        "Affordable (<3.0)", 
-        "Moderately Unaffordable (3.1-4.0)", 
-        "Seriously Unaffordable (4.1-5.0)", 
-        "Severely Unaffordable (5.1-9.0)", 
-        "Impossibly Unaffordable (>9.0)"
-    ]
-
-    for yr in years:
-        city_data_yr = make_city_view_data(dataframe, annual_income=0, year=yr, budget_pct=30)
-        if not city_data_yr.empty and RATIO_COL in city_data_yr.columns:
-            city_data_yr["cat"] = city_data_yr[RATIO_COL].apply(classify_strict)
-            counts = city_data_yr["cat"].value_counts(normalize=True) * 100
-            for cat in category_order:
-                history_data.append({
-                    "year": yr,
-                    "category": cat,
-                    "percentage": counts.get(cat, 0.0)
-                })
-
-    return pd.DataFrame(history_data)
-
-
 # ---------- Load data ----------
-df = get_data_cached()
+df = load_data()
 if df.empty:
     st.error("Application cannot run. Base data (df) is empty.")
     st.stop()
-
-# Initialize session state
-if 'last_drawn_city' not in st.session_state:
-    st.session_state.last_drawn_city = None
-if 'last_drawn_income' not in st.session_state: 
-    st.session_state.last_drawn_income = 0
-
 
 # =====================================================================
 #   LAYOUT SETUP
@@ -158,23 +100,24 @@ st.markdown("""
     <hr style="border: none; border-top: 1px solid #e6e6e6; margin-top: 5px; margin-bottom: 10px;">
     """, unsafe_allow_html=True)
 
-header_row_main, header_row_year = st.columns([4, 1]) # Middle Header
-main_col_left, main_col_right = st.columns([1, 1])    # Main Content
+# --- HEADER SECTION ---
+header_row_main, header_row_year = st.columns([4, 1]) # Top Header Row
+main_col_left, main_col_right = st.columns([1, 1])    # Content Columns
 
 
 # =====================================================================
-#   SECTION 2: HEADER & YEAR SELECTION
+#   SECTION 1: HEADER & YEAR SELECTION
 # =====================================================================
 
-# 1. Render Widget FIRST
+# Year Selector at top of the page
 with header_row_year:
     selected_year = year_selector(df, key="year_main_selector") 
 
-# --- [FIX 2] LOGIC SAFETY CHECK (PREVENTS 'NO OPTIONS' BUG) ---
+# --- Logic Safety Check ---
 if selected_year is None:
     selected_year = df["year"].max()
 
-# 2. Render Header Text
+# Header with instructions
 with header_row_main:
     st.markdown("""
         <h3 style="margin-top: -5px; padding-top: 0;">
@@ -187,7 +130,11 @@ with header_row_main:
     the data is being displayed using the year selector to the right.**""")
 
 
-# 3. CALCULATE DATA
+# =====================================================================
+#   SECTION 2: MAIN CONTENT (Left and Right columns for ranking and map)
+# =====================================================================
+
+# 1. CALCULATE DATA
 city_data = make_city_view_data(
     df, 
     annual_income=final_income,
@@ -195,7 +142,7 @@ city_data = make_city_view_data(
     budget_pct=30,
 )
 
-# 4. Apply Column Fixes
+# 2. Apply Column Fixes
 if not city_data.empty:
     city_data["affordability_rating"] = city_data[RATIO_COL].apply(classify_affordability)
     gap = city_data[RATIO_COL] - AFFORDABILITY_THRESHOLD
