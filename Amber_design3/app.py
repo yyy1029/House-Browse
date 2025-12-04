@@ -1028,7 +1028,7 @@ with main_col_right:
                     st.markdown(
                         f"""
                         - Median sale price: **${row['Median Sale Price']:,.0f}**
-                        - Per-capita income: **${row['Per Capita Income']:,.0f}**
+                        - Household Income: **${row['Household Income']:,.0f}**
                          """
                     )
 
