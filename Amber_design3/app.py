@@ -36,13 +36,13 @@ st.markdown(
     <span style="background-color: #f0f2f6; padding: 2px 6px; border-radius: 4px;">
             <strong>Median Sale Price / Median Househould Income</strong>
     </span><br>
-    <small>Lower ratios indicate better affordability. 
-    In this dashboard, cities with a ratio &le; 3.0 are classified as <strong>"Affordable"</strong>.
-    Those with a ratio between 3.1 to 4.0 inclusive are classified as <strong>"Moderately Unaffordable"</strong>.
-    Those with a ratio between 4.1 to 5.0 inclusive are classified as <strong>"Seriously Unaffordable"</strong>.
-    Those with a ratio between 5.1 to 8.9 inclusive are classified as <strong>"Severely Unaffordable"</strong>.
-    Those with a ratios &ge; 9.0 are classified as <strong>"Impossibly Unaffordable"</strong></small>.
-    </div>
+    # <small>Lower ratios indicate better affordability. 
+    # In this dashboard, cities with a ratio &le; 3.0 are classified as <strong>"Affordable"</strong>.
+    # Those with a ratio between 3.1 to 4.0 inclusive are classified as <strong>"Moderately Unaffordable"</strong>.
+    # Those with a ratio between 4.1 to 5.0 inclusive are classified as <strong>"Seriously Unaffordable"</strong>.
+    # Those with a ratio between 5.1 to 8.9 inclusive are classified as <strong>"Severely Unaffordable"</strong>.
+    # Those with a ratios &ge; 9.0 are classified as <strong>"Impossibly Unaffordable"</strong></small>.
+    # </div>
     """,
     unsafe_allow_html=True
 )
