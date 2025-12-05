@@ -6,7 +6,8 @@ import numpy as np
 import plotly.express as px
 import json
 import os
-import time 
+import time
+import io, contextlib  # <<< 新增：用于静音外部模块的print/log
 
 # --- RESTORED IMPORTS ---
 from zip_module import load_city_zip_data, get_zip_coordinates
@@ -162,6 +163,55 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ---------- 追加的全局样式小美化（不改内容，仅样式） ----------
+st.markdown(
+    """
+    <style>
+      /* 通用排版优化：略增行距 */
+      .block-container { line-height: 1.7; }
+
+      /* 标题层级的间距更克制 */
+      h3, .stMarkdown h3 { margin-top: .4rem; margin-bottom: .6rem; }
+      h4, .stMarkdown h4 { margin-top: .6rem; margin-bottom: .4rem; }
+
+      /* 分割线更柔和 */
+      hr { border: none; border-top: 1px solid rgba(0,0,0,.08); margin: 8px 0 12px; }
+
+      /* 原生控件标签提高可读性 */
+      .stSelectbox label, .stMultiSelect label, .stSlider label {
+        font-size: 0.95rem !important;
+        color: #2c3e50 !important;
+      }
+
+      /* 选择器控件的内部留白略增（提升触达性） */
+      .stSelectbox, .stMultiSelect { margin-bottom: .5rem; }
+      .stSelectbox div[data-baseweb="select"] > div,
+      .stMultiSelect div[data-baseweb="select"] > div {
+        min-height: 42px;
+      }
+
+      /* Plotly 图 hover 可读性稍提（不改数据/图形内容） */
+      .js-plotly-plot .hoverlayer .hovertext {
+        font-size: 13.5px !important;
+      }
+
+      /* 容器的圆角与微阴影（仅视觉） */
+      section[role="region"].pti-card,
+      div[data-testid="stVerticalBlock"] > div[aria-expanded] {
+        border-radius: 12px;
+        box-shadow: 0 1px 8px rgba(0,0,0,.04);
+      }
+
+      /* 深色模式的标题对比度优化 */
+      @media (prefers-color-scheme: dark){
+        .stSelectbox label, .stMultiSelect label, .stSlider label { color: #e9edf6 !important; }
+        hr { border-top-color: rgba(255,255,255,.12); }
+      }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 MAX_ZIP_RATIO_CLIP = 15.0
 
 
@@ -240,7 +290,10 @@ def calculate_category_proportions_history(dataframe):
 
 
 # ---------- Load data ----------
-df = get_data_cached()
+# <<< 仅此处静音：避免外部模块的print在界面上出现 >>>
+with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+    df = get_data_cached()
+
 if df.empty:
     st.error("Application cannot run. Base data (df) is empty.")
     st.stop()
