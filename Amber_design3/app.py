@@ -32,10 +32,12 @@ st.markdown(
     """
     <div style="border-top: 1px solid #e6e6e6; padding: 10px 0; margin-bottom: 10px;">
     Use this tool to allow users to compare cities by <strong> PTI (price-to-income ratio) </strong> and select metro areas of interest to explore ZIP-code level details.<br>
-    <strong>PTI Ratio: </strong>
-    <span style="background-color: #f0f2f6; padding: 2px 6px; border-radius: 4px;">
-            <strong>Median Sale Price / Median Househould Income</strong>
-    </span><br>
+    <strong style="font-size:18px;">PTI Ratio: </strong>
+    <span style="background-color: #f0f2f6; padding: 2px 6px; border-radius: 4px; font-size:18px;">
+        <strong>Median Sale Price / Median Household Income</strong>
+    </span>
+    </div>
+
     """,
     unsafe_allow_html=True
 )
