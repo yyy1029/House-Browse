@@ -43,13 +43,121 @@ st.markdown(
 )
 
 # Inject CSS
+# st.markdown(
+#     """
+#     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+#     <style>
+#     [data-testid="stAlert"] { display: none !important; }
+#     .block-container { padding-top: 2rem; }
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
+
 st.markdown(
     """
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
-    [data-testid="stAlert"] { display: none !important; }
-    .block-container { padding-top: 2rem; }
+      .pti-card{
+        --bg:#ffffff;
+        --fg:#111111;
+        --muted:#5b6573;
+        --accent:#1e3d8f;
+        --chip-bg:#eef1ff;
+        --border:#e6e6e6;
+        max-width: 820px;
+        margin: 12px 0 20px 0;
+        padding: 18px 20px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                     Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+                     "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        line-height: 1.75;
+      }
+      .pti-card h3{
+        margin: 0 0 8px 0;
+        font-size: 22px;
+        letter-spacing: .2px;
+        color: var(--accent);
+      }
+      .pti-card .lead{
+        font-size: 17px;
+        color: var(--fg);
+        margin: 0 0 10px 0;
+      }
+      .pti-card .ratio{
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 10px;
+        margin: 12px 0 8px 0;
+      }
+      .pti-card .label{
+        font-weight: 700;
+        font-size: 18px;
+        color: var(--accent);
+      }
+      .pti-card .chip{
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: var(--chip-bg);
+        font-weight: 600;
+        font-size: 16px;
+        border: 1px solid rgba(30,61,143,.12);
+      }
+      .pti-card .tips{
+        margin: 10px 0 0 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      .pti-card .tips li{ margin: 4px 0; }
+
+      /* 暗色模式适配 */
+      @media (prefers-color-scheme: dark) {
+        .pti-card{
+          --bg:#0f1420;
+          --fg:#e9edf6;
+          --muted:#a5afc1;
+          --accent:#96b3ff;
+          --chip-bg:#17223a;
+          --border:#24314a;
+        }
+      }
+
+      /* 移动端可读性：略增字号与间距 */
+      @media (max-width: 480px){
+        .pti-card{ padding:16px; }
+        .pti-card h3{ font-size: 20px; }
+        .pti-card .lead{ font-size: 16px; }
+        .pti-card .label{ font-size: 17px; }
+        .pti-card .chip{ font-size: 15px; }
+      }
     </style>
+
+    <section class="pti-card" role="region" aria-labelledby="pti-title">
+      <h3 id="pti-title">🏙️ City PTI Comparison Tool</h3>
+      <p class="lead">
+        Use this tool to compare cities by <strong>PTI (price-to-income ratio)</strong>
+        and select metro areas of interest to explore ZIP-code level details.
+      </p>
+
+      <div class="ratio">
+        <span class="label">PTI Ratio</span>
+        <span class="chip" aria-label="Median Sale Price divided by Median Household Income">
+          Median Sale Price &divide; Median Household Income
+        </span>
+      </div>
+
+      <ul class="tips" aria-label="Reading tips">
+        <li>Higher PTI → lower affordability.</li>
+        <li>Scan, then drill down: select a city to see ZIP-level insights.</li>
+        <li>Keep context: compare similar metro sizes/time frames when possible.</li>
+      </ul>
+    </section>
     """,
     unsafe_allow_html=True
 )
