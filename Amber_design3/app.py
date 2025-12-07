@@ -470,29 +470,61 @@ with main_col_right:
                             [1.0, "rgb(139, 0, 0)"]       # Dark red (very unaffordable)
                         ]
                         
+                        # fig_map = px.choropleth_mapbox(
+                        #     df_zip_map,
+                        #     geojson=zip_geojson,
+                        #     locations="zip_str_padded", 
+                        #     featureidkey="properties.ZCTA5CE10",
+                        #     color="color_value", 
+                        #     color_continuous_scale=custom_colorscale,
+                        #     range_color=[0, 1],
+                        #     hover_name="zip_code_str",
+                        #     hover_data={
+                        #         price_col: ":,.0f",
+                        #         # income_col: ":,.0f",
+                        #         "zip_str_padded":False,
+                        #         "color_value": False,
+                        #     },
+                        #     mapbox_style="carto-positron",
+                        #     center={
+                        #         "lat": df_zip_map["lat"].mean(),
+                        #         "lon": df_zip_map["lon"].mean(),
+                        #     },
+                        #     zoom=10,
+                        #     height=454,
+                        # )
                         fig_map = px.choropleth_mapbox(
-                            df_zip_map,
-                            geojson=zip_geojson,
-                            locations="zip_str_padded", 
-                            featureidkey="properties.ZCTA5CE10",
-                            color="color_value", 
-                            color_continuous_scale=custom_colorscale,
-                            range_color=[0, 1],
-                            hover_name="zip_code_str",
-                            hover_data={
-                                price_col: ":,.0f",
-                                # income_col: ":,.0f",
-                                "zip_str_padded":False,
-                                "color_value": False,
-                            },
-                            mapbox_style="carto-positron",
-                            center={
-                                "lat": df_zip_map["lat"].mean(),
-                                "lon": df_zip_map["lon"].mean(),
-                            },
-                            zoom=10,
-                            height=454,
-                        )
+    df_zip_map,
+    geojson=zip_geojson,
+    locations="zip_str_padded", 
+    featureidkey="properties.ZCTA5CE10",
+    color="color_value", 
+    color_continuous_scale=custom_colorscale,
+    range_color=[0, 1],
+    hover_name="zip_code_str",
+    hover_data={
+        price_col: ":,.0f",
+        "zip_str_padded": False,
+        "color_value": False,
+    },
+    mapbox_style="carto-positron",
+    center={
+        "lat": df_zip_map["lat"].mean(),
+        "lon": df_zip_map["lon"].mean(),
+    },
+    zoom=10,  # 你可以调整这个值来控制初始缩放级别
+    height=454,
+    layout={
+        "mapbox": {
+            "zoom": 10,  # 这里也是可以调整缩放级别的
+            "center": {
+                "lat": df_zip_map["lat"].mean(),
+                "lon": df_zip_map["lon"].mean(),
+            },
+        }
+    }
+)
+
 
                         # Update colorbar with meaningful labels
                         tick_vals = [0.0, 0.25, 0.5, 0.75, 1.0]
